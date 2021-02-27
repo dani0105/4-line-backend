@@ -13,7 +13,8 @@ const path      = require('path');
 const config    = require('./config/envconfig');
 
 //Routes
-const route     = require('./routers/index');
+const Route     = require('./routers/index');
+
 
 
 try{
@@ -34,6 +35,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static('public'));
+
+app.use('/auth', Route.AuthRoute);
 
 server .listen(config.server.port, function(){
     console.log(`Servidor escuchando en puerto ${config.server.port}`);

@@ -1,5 +1,5 @@
-//const AuthRoute = require('./auth.js');
+const AuthController = require('./authController.js');
 
 module.exports = {
-    
+    AuthController
 };
