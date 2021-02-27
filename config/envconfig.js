@@ -1,13 +1,13 @@
 var config = {
-    database: {
-        user: "oqvgxmjxrbiehz",
-        host: "ec2-54-162-119-125.compute-1.amazonaws.com",
-        database: "d1kjdjno27ao1m",
-        password: "6b26332e9fee7cbcbdd25e5c34b5937550a8fe536f04bded40cb832d3da9f9ac",
-        ssl: true,
+    database:{
+        user: 'ittbnvjypgtlmz',
+        host: "ec2-34-233-186-251.compute-1.amazonaws.com",
+        database: "d8bk2p38dehfga",
+        password: "d5774600508ff68cffe1146822f7dba4846cd5e141d5d0abdb603f97e169491f",
+        port: 5432,
+        max: 5,
         idleTimeoutMillis: 5000,
-        connectionTimeoutMillis: 5000,
-        port: 5432
+        connectionTimeoutMillis: 5000
     },
     server: {
         host: 'localhost', //localhost
