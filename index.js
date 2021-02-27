@@ -15,7 +15,7 @@ const config    = require('./config/envconfig');
 //Routes
 const Route     = require('./routers/index');
 
-
+app.set('port', process.env.PORT || config.server.port);
 
 try{
     fs.mkdirSync(path.resolve('./temp'));
@@ -38,7 +38,7 @@ app.use(express.static('public'));
 
 app.use('/auth', Route.AuthRoute);
 
-server .listen(config.server.port, function(){
-    console.log(`Servidor escuchando en puerto ${config.server.port}`);
+server.listen(app.get('port'),function(){
+    console.log(`Servidor escuchando en puerto ${app.get('port')}`);
 });
 
