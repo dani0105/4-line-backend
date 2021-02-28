@@ -5,7 +5,7 @@
 CREATE TABLE user_account
 (
     id          SERIAL          PRIMARY KEY,
-    oauth_uid   varchar(100)    NOT NULL,
+    oauth_uid   varchar(100)    unique DEFAULT NULL,
     email       varchar(100)    DEFAULT NULL,
     picture     varchar(255)    DEFAULT NULL,
     username    varchar(50)     DEFAULT null,    
