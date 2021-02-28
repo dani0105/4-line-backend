@@ -14,8 +14,16 @@ router.post('/login', (req, res, next) => {
 });
 
 router.post('/register', (req, res, next) => {
-    console.log(req.body);
     controller.register(req.body, res, next).then(result => {
+        if(result.success)
+            res.status(StatusCodes.OK).json(result);
+        else
+            res.status(StatusCodes.UNAUTHORIZED).json({ success: false});
+    }).catch(err => res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) )
+});
+
+router.post('/thirdParty', (req, res, next) => {
+    controller.thirdParty(req.body, res, next).then(result => {
         if(result.success)
             res.status(StatusCodes.OK).json(result);
         else
