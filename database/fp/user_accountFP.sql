@@ -1,4 +1,5 @@
-CREATE OR REPLACE PROCEDURE public.register_user(
+-- se encarga de ingresar nuevos usuarios al sistema
+CREATE OR REPLACE PROCEDURE public.register(
     _email      character varying,
     _username   character varying,
     _password   character varying,
@@ -12,6 +13,7 @@ begin
         success =false;
         return;
     END IF;
+
     insert into public.user_account 
         (email, username, password)
     values
@@ -21,55 +23,75 @@ begin
 end ;
 $BODY$;
 
-
-CREATE OR REPLACE FUNCTION public.login_user(
-    _oauth_uid  character varying DEFAULT NULL,
-    _username   character varying DEFAULT NULL,
-    _password   character varying DEFAULT NULL
+CREATE OR REPLACE FUNCTION public.login(
+    _email      character varying,
+    _password   character varying
 ) 
-RETURNS table(id integer, email character varying, picture character varying)
+RETURNS table(
+    id integer, 
+    username character varying,
+    picture character varying
+)
 LANGUAGE 'plpgsql'
 AS $BODY$
 begin
     return query
         select 
             user_account.id,
-            user_account.email,
+            user_account.username,
             user_account.picture
         from 
             public.user_account 
         where 
-            oauth_uid = COALESCE(_oauth_uid,oauth_uid) or 
-            (username = _username AND password = _password)
+            email = _email AND 
+            password = _password
         FETCH FIRST ROW ONLY;
 end ;
 $BODY$;
 
+-- Este procedimiento se encarga de registrar un nuevo usuario o cargar sus datos
 CREATE OR REPLACE PROCEDURE public.third_party(
-    _oauth_uid  character varying,
-    _email      character varying,
-    _picture    character varying,
-    INOUT success   BOOLEAN DEFAULT false,
-    INOUT id_new    INTEGER DEFAULT NULL)
+    _oauth_uid      character varying,
+    INOUT email     character varying,
+    INOUT username  character varying,
+    INOUT id_new    INTEGER DEFAULT NULL,
+    INOUT success   BOOLEAN DEFAULT false)
 LANGUAGE 'plpgsql'
 AS $BODY$
 DECLARE 
+    _username   character varying;
+    _email      character varying;
 begin
-    select id into id_new from 
-        public.user_account 
+    select 
+        UA.id,
+        UA.email,
+        UA.username
+    into 
+        id_new ,
+        _email,
+        _username
+    from 
+        public.user_account UA
     where 
-        oauth_uid = _oauth_uid;
+        UA.oauth_uid = _oauth_uid AND
+        UA.is_active = true;
 
-    success =True;
+
     if (id_new is null) THEN 
         
         insert into public.user_account 
-            (oauth_uid, email, picture)
+            (oauth_uid, email, username)
         values
-            (_oauth_uid, _email, _picture) returning user_account.id into id_new;
-
-        return;
+            (_oauth_uid, email, username) returning user_account.id into id_new;
+    else
+        update public.user_account set
+            email= _email
+        where
+            id= id_new;
+        username = _username;
+        email = _email;
     END IF;
+    success = true;
     return;
 end ;
 $BODY$;

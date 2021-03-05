@@ -1,5 +1,5 @@
-//const AuthRoute = require('./auth.js');
+//const FacebookMiddlewares = require('./facebook-verify');
 
 module.exports = {
-    
+   
 };

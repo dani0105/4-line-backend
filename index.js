@@ -1,4 +1,5 @@
 // Server basic
+require('dotenv').config();
 const express   = require('express');
 var app         = express();
 var server      = require('http').Server(app);
@@ -9,13 +10,10 @@ const fs        = require('fs');
 const logger    = require('morgan');
 const path      = require('path'); 
 
-//Configuration files
-const config    = require('./config/envconfig');
-
 //Routes
 const Route     = require('./routers/index');
 
-app.set('port', process.env.PORT || config.server.port);
+app.set('port', process.env.PORT);
 
 try{
     fs.mkdirSync(path.resolve('./temp'));
@@ -39,6 +37,6 @@ app.use(express.static('public'));
 app.use('/auth', Route.AuthRoute);
 
 server.listen(app.get('port'),function(){
-    console.log(`Servidor escuchando en puerto ${app.get('port')}`);
+    console.log(`Servidor escuchando en puerto ${process.env.PORT}`);
 });
 
