@@ -90,7 +90,7 @@ exports.facebook = async (req) => {
                 data:{
                     email:data.email,
                     username:data.username,
-                    id:data.id
+                    id:data.id_new
                 },
                 access_token:token
             };
@@ -124,7 +124,7 @@ exports.google = async (req) => {
             data:{
                 email:data.email,
                 username:data.username,
-                id:data.id
+                id:data.id_new
             },
             access_token:token
         };
