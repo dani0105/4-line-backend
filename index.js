@@ -3,7 +3,9 @@ require('dotenv').config();
 const express   = require('express');
 var app         = express();
 var server      = require('http').Server(app);
-const io        = require('socket.io')(server);
+const io        = require('socket.io')(server,{cors:{
+    origin:'*'
+}});
 const fs        = require('fs');
 
 //Modules
@@ -12,6 +14,9 @@ const path      = require('path');
 
 //Routes
 const Route     = require('./routers/index');
+
+//controllers
+const Controller= require('./controllers/index');
 
 app.set('port', process.env.PORT);
 
@@ -36,7 +41,17 @@ app.use(express.static('public'));
 
 app.use('/auth', Route.AuthRoute);
 
-server.listen(app.get('port'),function(){
+
+io.on("connection", (client)=> {
+    //Ejemplo de un socket
+    console.log("listening Socket");
+    Controller.BoardController.hello(io,client);
+
+    //De esta manera se agregar nuevos puntos de escuhca al socket
+    //Controller.BoardController.nombreSocket(io,client)
+});
+
+server.listen(process.env.PORT,function(){
     console.log(`Servidor escuchando en puerto ${process.env.PORT}`);
 });
 
