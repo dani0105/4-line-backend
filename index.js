@@ -6,6 +6,7 @@ var server      = require('http').Server(app);
 const io        = require('socket.io')(server,{cors:{
     origin:'*'
 }});
+
 const fs        = require('fs');
 
 //Modules
@@ -17,6 +18,7 @@ const Route     = require('./routers/index');
 
 //controllers
 const Controller= require('./controllers/index');
+const { Socket } = require('dgram');
 
 app.set('port', process.env.PORT);
 
@@ -40,14 +42,13 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 
 app.use('/auth', Route.AuthRoute);
-
-
+ 
 io.on("connection", (client)=> {
-    //Ejemplo de un socket
-    console.log("listening Socket");
-    Controller.BoardController.hello(io,client);
-
-    //De esta manera se agregar nuevos puntos de escuhca al socket
+    Controller.BoardController.createGameRoom(io,client);
+    Controller.BoardController.connectGameRoom(io,client);
+    Controller.BoardController.searchGame(io,client);
+    Controller.BoardController.playGame(io,client);
+    //De esta manera se agregar nuevos puntos de eschuca al socket
     //Controller.BoardController.nombreSocket(io,client)
 });
 
