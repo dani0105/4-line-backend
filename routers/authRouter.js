@@ -9,7 +9,10 @@ router.post('/register', (req, res, next) => {
             res.status(StatusCodes.OK).json(result);
         else
             res.status(StatusCodes.BAD_REQUEST).json({ success: false});
-    }).catch(err => res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) )
+    }).catch(err => {
+        console.log(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) 
+    });
 });
 
 router.post('/login', (req, res, next) => {
@@ -18,7 +21,10 @@ router.post('/login', (req, res, next) => {
             res.status(StatusCodes.OK).json(result);
         else
             res.status(StatusCodes.UNAUTHORIZED).json({ success: false});
-    }).catch(err => res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) )
+    }).catch(err => {
+        console.log(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) 
+    });
 });
 
 router.post('/facebook', (req, res, next) => {
@@ -27,7 +33,10 @@ router.post('/facebook', (req, res, next) => {
             res.status(StatusCodes.OK).json(result);
         else
             res.status(StatusCodes.UNAUTHORIZED).json({ success: false});
-    }).catch(err => res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) )
+    }).catch(err => {
+        console.log(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) 
+    });
 });
 
 router.post('/google', (req, res, next) => {
@@ -37,8 +46,9 @@ router.post('/google', (req, res, next) => {
         else
             res.status(StatusCodes.UNAUTHORIZED).json({ success: false});
     }).catch(err => {
-        console.log(err)
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) })
+        console.log(err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) 
+    });
 });
 
 module.exports = router;
