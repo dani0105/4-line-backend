@@ -9,7 +9,7 @@ LANGUAGE 'plpgsql'
 AS $BODY$
 DECLARE 
 begin
-    if EXISTS(select id from public.user_account where username = _username AND password = _password) THEN 
+    if EXISTS(select id from public.user_account where email = _email) THEN 
         success =false;
         return;
     END IF;
@@ -43,8 +43,8 @@ begin
         from 
             public.user_account 
         where 
-            email = _email AND 
-            password = _password
+            email       = _email AND 
+            password    = _password
         FETCH FIRST ROW ONLY;
 end ;
 $BODY$;
