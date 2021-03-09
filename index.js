@@ -42,14 +42,11 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 
 app.use('/auth', Route.AuthRoute);
- 
+
 io.on("connection", (client)=> {
     Controller.BoardController.createGameRoom(io,client);
     Controller.BoardController.connectGameRoom(io,client);
     Controller.BoardController.searchGame(io,client);
-    Controller.BoardController.playGame(io,client);
-    //De esta manera se agregar nuevos puntos de eschuca al socket
-    //Controller.BoardController.nombreSocket(io,client)
 });
 
 server.listen(process.env.PORT,function(){
