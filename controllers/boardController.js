@@ -12,7 +12,7 @@ exports.createGameRoom = (socket,client) => {
     client.on("createGameRoom", (data)=>{
         cont++;
         var code = Math.random().toString(36).substring(7).concat(cont);
-        var gameRoom = new NLineRoom(data.boardSize, data.playerInfo, client, code);
+        var gameRoom = new NLineRoom(data.boardSize, data.playerInfo, client, code, true);
         gameRooms.push(gameRoom);
         client.emit('createdGameRoom', code);
     });
@@ -25,8 +25,10 @@ exports.createGameRoom = (socket,client) => {
  */
 exports.connectGameRoom = (socket,client) => {
     client.on("connectGameRoom", (data)=>{
-        for( var room in gameRooms){
+        for( var i = 0; i < gameRooms.length; i++ ){
+            var room = gameRooms[i];
             if(room.code == data.code){
+                console.log(data.playerInfo)
                 room.player2 = {
                     info:data.playerInfo,
                     socket:client
@@ -61,7 +63,7 @@ exports.searchGame = (socket,client) => {
             }
         }
         cont++;
-        var gameRoom = new NLineRoom(data.boardSize, data.playerInfo, client, null);
+        var gameRoom = new NLineRoom(data.boardSize, data.playerInfo, client, false);
         gameRooms.push(gameRoom);
         client.emit('searchedGame', {searching:true});
     });
