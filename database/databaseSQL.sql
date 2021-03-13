@@ -13,3 +13,14 @@ CREATE TABLE user_account
     is_active   BOOLEAN         DEFAULT TRUE,
     created_at  DATE        DEFAULT CURRENT_DATE
 );
+
+
+CREATE TABLE game
+(
+    id              SERIAL  PRIMARY KEY,
+    id_player1      integer,
+    id_player2      integer,
+    player_winner   integer,
+    is_active       BOOLEAN DEFAULT TRUE,
+    created_at      DATE    DEFAULT CURRENT_DATE
+);
