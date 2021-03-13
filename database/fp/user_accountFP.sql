@@ -125,9 +125,9 @@ CREATE OR REPLACE FUNCTION get_games(
 )
 RETURNS table(
     id          integer,
-    idPlayer1   integer,
+    id_player1   integer,
     player1     character varying,
-    idPlayer2   integer,
+    id_player2   integer,
     player2     character varying,    
     gameStatus  integer,
     date        date
