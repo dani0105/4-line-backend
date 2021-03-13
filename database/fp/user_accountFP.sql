@@ -95,3 +95,64 @@ begin
     return;
 end ;
 $BODY$;
+
+
+-- Este procedimiento se encarga de registrar un nuevo usuario o cargar sus datos
+CREATE OR REPLACE PROCEDURE public.add_game(
+    _id_player1 integer,
+    _id_player2 integer,
+    _player_winner integer,
+    INOUT success   BOOLEAN DEFAULT false)
+LANGUAGE 'plpgsql'
+AS $BODY$
+begin
+    if(_id_player1 = _id_player2) THEN
+        return;
+    END IF;
+    insert into public.game 
+        (id_player1, id_player2, player_winner)
+    values
+        (_id_player1, _id_player2, _player_winner);
+    success = true;
+    return;
+end ;
+$BODY$;
+
+CREATE OR REPLACE FUNCTION get_games(
+    _id_user_account integer,
+    _size integer,
+    _page_number integer
+)
+RETURNS table(
+    id          integer,
+    idPlayer1   integer,
+    player1     character varying,
+    idPlayer2   integer,
+    player2     character varying,    
+    gameStatus  integer,
+    date        date
+)
+AS $$
+BEGIN
+    RETURN QUERY SELECT 
+            G.id,
+            G.id_player1,
+            player1.username,
+            G.id_player2,
+            player2.username,
+            (case when G.player_winner = _id_user_account then 1 else 2 end),
+            G.created_at
+        FROM
+            public.game G
+        INNER JOIN public.user_account player1 ON player1.id = G.id_player1
+        INNER JOIN public.user_account player2 ON player2.id = G.id_player2
+        WHERE
+            G.id_player1 = _id_user_account or 
+            G.id_player2 = _id_user_account AND
+            G.is_active = true
+        ORDER BY id DESC 
+            OFFSET _size * _page_number
+            FETCH NEXT _size ROWS ONLY;
+END;
+$$
+LANGUAGE PLPGSQL;

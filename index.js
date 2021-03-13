@@ -42,6 +42,7 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 
 app.use('/auth', Route.AuthRoute);
+app.use('/player', Route.PlayerRoute);
 
 io.on("connection", (client)=> {
     Controller.BoardController.createGameRoom(io,client);
