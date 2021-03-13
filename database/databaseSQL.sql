@@ -22,5 +22,13 @@ CREATE TABLE game
     id_player2      integer,
     player_winner   integer,
     is_active       BOOLEAN DEFAULT TRUE,
-    created_at      DATE    DEFAULT CURRENT_DATE
+    created_at      DATE    DEFAULT CURRENT_DATE,
+    CONSTRAINT player1_id FOREIGN KEY (id_player1) REFERENCES user_account (id) MATCH SIMPLE
+            ON UPDATE NO ACTION
+            ON DELETE NO ACTION
+            NOT VALID,
+    CONSTRAINT player2_id FOREIGN KEY (id_player2) REFERENCES user_account (id) MATCH SIMPLE
+            ON UPDATE NO ACTION
+            ON DELETE NO ACTION
+            NOT VALID
 );

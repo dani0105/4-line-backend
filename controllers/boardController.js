@@ -12,11 +12,17 @@ exports.createGameRoom = (socket,client) => {
     client.on("createGameRoom", (data)=>{
         cont++;
         var code = Math.random().toString(36).substring(7).concat(cont);
-        var gameRoom = new NLineRoom(data.boardSize, data.playerInfo, client, code, true);
+        var gameRoom = new NLineRoom(data.boardSize,4, data.playerInfo, client, code, true,deleteGameRoom);
         gameRooms.push(gameRoom);
         client.emit('createdGameRoom', code);
     });
 }
+
+function deleteGameRoom (object) {
+    let index = gameRooms.indexOf(object);
+    gameRooms.splice(index,1);
+}
+
 
 /**
  *  Se encarga de conectar con una instancia de juego en epecifico
@@ -63,7 +69,7 @@ exports.searchGame = (socket,client) => {
             }
         }
         cont++;
-        var gameRoom = new NLineRoom(data.boardSize, data.playerInfo, client, false);
+        var gameRoom = new NLineRoom(data.boardSize,4, data.playerInfo, client,'',false,deleteGameRoom);
         gameRooms.push(gameRoom);
         client.emit('searchedGame', {searching:true});
     });
