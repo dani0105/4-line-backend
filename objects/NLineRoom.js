@@ -103,16 +103,20 @@ module.exports = class NLineRoom{
                 this.disconnectionhandler(false)
         });
 
+        this.cronometro(player1Playing);
+
         this.player1.socket.on('boardMove', (data) => {
             if(this.player1Playing){
                 this.player1Playing = false;
-                this.moveHandler(data,this.player2.socket) 
+                cronometro(player1Playing);
+                this.moveHandler(data,this.player2.socket);
             }
         });
         this.player2.socket.on('boardMove', (data) =>{
             if(!this.player1Playing){
                 this.player1Playing = true;
-                this.moveHandler(data,this.player1.socket) 
+                cronometro(player1Playing);
+                this.moveHandler(data,this.player1.socket);
             }
         });
     }
@@ -122,13 +126,12 @@ module.exports = class NLineRoom{
         const cont = new modulo.Descontador(15);
         var d = cont.start().subscribe(
             data =>  {
-                console.log(data);
                 if (data === 'FINISH') {
                     d.unsubscribe();
-                    if(jugador === 1){
-                        console.log("Perdio Jugador#1");
-                    }else if(jugador === 0){
-                        console.log("Perdio Jugador#2");
+                    if(jugador === true){
+                        this.player1.socket.disconnect(true);
+                    }else if(jugador === false){
+                        this.player2.socket.disconnect(true);
                     }
                 }
             }
