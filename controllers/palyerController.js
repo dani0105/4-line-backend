@@ -2,11 +2,10 @@ const { Client } = require('pg');
 const StatusCodes = require('http-status-codes').StatusCodes;
 
 const credentials = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    database:process.env.DB_DATABASE,
-    port:process.env.DB_PORT,
-    password: process.env.DB_PASSWORD
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 }
 
 exports.addGame = async (req) => {
