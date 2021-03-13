@@ -117,6 +117,24 @@ module.exports = class NLineRoom{
         });
     }
 
+    cronometro(jugador){
+        const modulo = require('proyecto-2c-crono');
+        const cont = new modulo.Descontador(15);
+        var d = cont.start().subscribe(
+            data =>  {
+                console.log(data);
+                if (data === 'FINISH') {
+                    d.unsubscribe();
+                    if(jugador === 1){
+                        console.log("Perdio Jugador#1");
+                    }else if(jugador === 0){
+                        console.log("Perdio Jugador#2");
+                    }
+                }
+            }
+        );
+    }
+
     createBoard(size) {
         let board = [];
         for (let x = 0; x < size; x++) {
