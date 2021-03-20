@@ -58,7 +58,7 @@ exports.searchGame = (socket,client) => {
     client.on("searchGame", (data)=>{
         for( var i = 0; i < gameRooms.length; i++){
             var room = gameRooms[i];
-            if(!room.privateRoom){
+            if(!room.privateRoom && data.boardSize == room.board.length){
                 room.player2 = {
                     info:data.playerInfo,
                     socket:client
