@@ -46,6 +46,7 @@ module.exports = class NLineRoom{
             this.board[data.x][data.y].id = data.id;
             
             if(this.verifyWin(data.id)){
+                console.log("Ganador")
                 //Gano el Jugador que movio
                 this.finishGame(1,data.id);
                 return;
@@ -72,8 +73,8 @@ module.exports = class NLineRoom{
             player2:this.player2.info.id,
             player_winner: playerWinner
         })
-        this.player1.socket.disconnect(true);
-        this.player2.socket.disconnect(true);
+        /*this.player1.socket.disconnect(true);
+        this.player2.socket.disconnect(true);*/
     }
 
     /**
@@ -107,23 +108,23 @@ module.exports = class NLineRoom{
                 if(this.board[r][c].id != id)
                     continue
                 
-                if(c+this.winSize <= this.board.length){
+                if(c+(this.winSize-1) < this.board.length){
                     if(this.verifyRight(r,c,id)){
                         this.markGroup(r,c,0,1);
                         return true;
                     }
                 }
-                if(r+this.winSize <= this.board.length){
+                if(r+(this.winSize-1) < this.board.length){
                     if(this.verifyBottom(r,c,id)){
                         this.markGroup(r,c,1,0);
                         return true;
                     }
-                    if(c+this.winSize <= this.board.length)
+                    if(c+(this.winSize-1) < this.board.length)
                         if(this.verifyBotomRight(r,c,id)){
                             this.markGroup(r,c,1,1);
                             return true;
                         }
-                    if(c-this.winSize >= 0)
+                    if(c-(this.winSize-1) >= 0)
                         if(this.verifyBottomLeft(r,c,id)){
                             this.markGroup(r,c,1,-1);
                             return true;
@@ -135,7 +136,7 @@ module.exports = class NLineRoom{
     }
 
     verifyBottomLeft(x,y,id){
-        for(let i = this.winSize; i > 0; i--){
+        for(let i = this.winSize-1; i > 0; i--){
             if(this.board[x+i][y-i].id != id){
                 return false;
             }
