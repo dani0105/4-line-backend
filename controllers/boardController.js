@@ -12,9 +12,12 @@ exports.createGameRoom = (socket,client) => {
     client.on("createGameRoom", (data)=>{
         cont++;
         var code = Math.random().toString(36).substring(7).concat(cont);
-        var gameRoom = new NLineRoom(data.boardSize,4, data.playerInfo, client, code, true,deleteGameRoom);
+        var gameRoom = new NLineRoom(data.boardSize, 4, data.playerInfo, client, code, true, deleteGameRoom, data.bot, data.nivel);
         gameRooms.push(gameRoom);
         client.emit('createdGameRoom', code);
+        if(data.bot){
+            gameRoom.start();
+        }
     });
 }
 

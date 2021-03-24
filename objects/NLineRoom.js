@@ -1,7 +1,7 @@
 
 module.exports = class NLineRoom{
 
-    constructor(size,winSize, playerInfo, socketPlayer1, code, privateRoom,deleter){
+    constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels){
         this.board = this.createBoard(size);
         this.code = code;
         this.winSize = winSize;
@@ -17,26 +17,40 @@ module.exports = class NLineRoom{
         this.privateRoom = privateRoom;
         this.active = true;
         this.deleter = deleter;
+        this.botInfo = {
+            bot: bots,
+            nivel: nivels
+        }
+        //for (var i in this.board) {
+            //for (var n in this.board[i]){
+                //if(this.board[i][n].id!=0 && this.board[i][n].id!=-1){
+                    //console.log(this.board[i][n].id)
+                //}
+                //console.log(this.board[i][n].id)
+            //}
+        //}
     }
 
     disconnectionhandler (isPlayer1) {
         this.active = false;
         this.deleter(this);
-        const controller = require('../controllers').PlayerController;
-        // se guarda en al base de datos
-        controller.addGame({
-            player1:this.player1.info.id,
-            player2:this.player2.info.id,
-            player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
-        })
-        this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
-        this.player2.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
-        // se envia la informacion de perdidad al jugador desconectado
+        if(!this.botInfo.bot){
+            const controller = require('../controllers').PlayerController;
+            // se guarda en al base de datos
+            controller.addGame({
+                player1:this.player1.info.id,
+                player2:this.player2.info.id,
+                player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
+            })
+            this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
+            this.player2.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
+            // se envia la informacion de perdidad al jugador desconectado
 
-        // se cierra la conexion
-        //console.log(this.player1.socket);
-        this.player1.socket.disconnect(true);
-        this.player2.socket.disconnect(true);
+            // se cierra la conexion
+            //console.log(this.player1.socket);
+            this.player1.socket.disconnect(true);
+            this.player2.socket.disconnect(true);
+        }
     }
 
     moveHandler(data,sendTo){
@@ -62,6 +76,10 @@ module.exports = class NLineRoom{
     }
 
     finishGame(win,playerWinner){
+        if(this.botInfo.bot){
+            this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+            return;
+        }
         this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.active = false;
@@ -170,10 +188,69 @@ module.exports = class NLineRoom{
         }
         return true;
     }
+    startBot(){
+        this.player1.socket.emit('gameRoomInfo',{board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
+        
+        this.player1.socket.on('disconnect', () => {
+            if(this.active)
+                this.disconnectionhandler(true)
+        });
 
-    start(){
+        //this.cronometro(player1Playing);
+
+        this.player1.socket.on('boardMove', (data) => {
+            this.botfunction(this.botInfo.nivel, this.board.length);
+            //cronometro(player1Playing);
+            //this.moveHandler(data,this.player2.socket);
+        });
+
+        //if(!this.player1Playing){
+            //this.player1Playing = true;
+            //cronometro(player1Playing);
+            //botfunction(this.botInfo.nivel, this.size);
+        //}
+    }
+
+    getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    botfunction(nivel, size){
+        console.log(size)
+        if(nivel == 1){
+            if(this.verifyBoard()){
+                while(true){
+                    var y = this.getRandomInt(0, size-1);
+                    var data = this.validarEspacio(y);
+                    if(data){
+                        break;
+                    }
+                }
+                this.moveHandler({x:data.x, y:data.y, id:-1},this.player1.socket);
+            } else {
+                this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
+            }
+        } else if(nivel == 2){
+            for (var i in this.board) {
+                print(this.board[i]);
+            }
+        } else if(nivel == 3){  
+
+        } 
+    }
+
+    validarEspacio(y){
+        for(var i = this.board.length-1; i >= 0;i--){
+            if(this.board[i][y].id == 0){
+                return this.board[i][y];
+            }
+        }  
+        return false;
+    }
+
+    startHuman(){
         this.player1.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
-        this.player2.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:!this.player1Playing, player: this.player1.info });
+        this.player2.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:!this.player1Playing, player: this.player1.info});
 
         this.player1.socket.on('disconnect', () => {
             if(this.active)
@@ -192,12 +269,22 @@ module.exports = class NLineRoom{
                 this.moveHandler(data,this.player2.socket);
             }
         });
+
         this.player2.socket.on('boardMove', (data) =>{
             if(!this.player1Playing){
                 this.player1Playing = true;
                 this.moveHandler(data,this.player1.socket);
             }
         });
+    }
+
+    start(){
+        console.log(this.botInfo)
+        if(this.botInfo.bot == true){
+            this.startBot();
+        } else {
+            this.startHuman();
+        }
     }
 
     cronometro(jugador){
