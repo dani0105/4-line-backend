@@ -21,14 +21,6 @@ module.exports = class NLineRoom{
             bot: bots,
             nivel: nivels
         }
-        //for (var i in this.board) {
-            //for (var n in this.board[i]){
-                //if(this.board[i][n].id!=0 && this.board[i][n].id!=-1){
-                    //console.log(this.board[i][n].id)
-                //}
-                //console.log(this.board[i][n].id)
-            //}
-        //}
     }
 
     disconnectionhandler (isPlayer1) {
@@ -71,7 +63,9 @@ module.exports = class NLineRoom{
                 return;
             }
             // se envia la informacion al jugador
-            sendTo.emit('responseBoard', data)
+            if(!this.botInfo.bot || data.id == -1){
+                sendTo.emit('responseBoard', data)
+            }
         }
     }
 
@@ -188,6 +182,73 @@ module.exports = class NLineRoom{
         }
         return true;
     }
+
+    verifyBottomLeftPCO(x,y,id){
+        for(let i = this.winSize-2; i > 0; i--){
+            if(this.board[x+i][y-i].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyBotomRightPCO(x,y,id){
+        for(let i = 0; i < this.winSiz-1; i++){
+            if(this.board[x+i][y+i].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    verifyRightPCO(x,y,id){
+        for(let i = 0; i < this.winSize-1; i++){
+            if(this.board[x][y+i].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyBottomPCO(x,y,id){
+        for(let i = 0; i < this.winSize-1; i++){
+            if(this.board[x+i][y].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyUpPC(x,y,id){
+        console.log(x-1,y)
+        if(x-1 > -1){
+            if(this.board[x-1][y].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyLeftPC(x,y,id){
+        console.log(x,y-1)
+        if(y-1 > -1){
+            if(this.board[x][y-1].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyRightPC(x,y,id){
+        console.log(x,y+1)
+        if(y+1 < this.size){
+            if(this.board[x][y+1].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
     startBot(){
         this.player1.socket.emit('gameRoomInfo',{board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
         
@@ -199,9 +260,9 @@ module.exports = class NLineRoom{
         //this.cronometro(player1Playing);
 
         this.player1.socket.on('boardMove', (data) => {
-            this.botfunction(this.botInfo.nivel, this.board.length);
+            this.moveHandler(data,this.player2.socket);
+            this.botfunction(this.botInfo.nivel, this.board.length, data);
             //cronometro(player1Playing);
-            //this.moveHandler(data,this.player2.socket);
         });
 
         //if(!this.player1Playing){
@@ -215,7 +276,7 @@ module.exports = class NLineRoom{
         return Math.floor(Math.random() * (max - min)) + min;
     }
 
-    botfunction(nivel, size){
+    botfunction(nivel, size, dataUser){
         console.log(size)
         if(nivel == 1){
             if(this.verifyBoard()){
@@ -227,15 +288,61 @@ module.exports = class NLineRoom{
                     }
                 }
                 this.moveHandler({x:data.x, y:data.y, id:-1},this.player1.socket);
+                for (var i in this.board) {
+                    console.log(this.board[i]);
+                }
             } else {
                 this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
             }
         } else if(nivel == 2){
-            for (var i in this.board) {
-                print(this.board[i]);
+            var ronda = false;
+            while(!ronda){
+                var y = this.getRandomInt(1, 4);
+                if(this.verifyBoard()){
+                    if(!this.verifyRightPC(dataUser.x, dataUser.y, dataUser.id) && y == 1){
+                        while(true){
+                            var data = this.validarEspacio(dataUser.y+1);
+                            if(data){
+                                break;
+                            }
+                        }
+                        this.moveHandler({x:data.x, y:dataUser.y+1, id:-1},this.player1.socket);   
+                        ronda = true; 
+                        console.log("derecha")    
+                    }else if(!this.verifyLeftPC(dataUser.x, dataUser.y, dataUser.id) && y == 2){
+                        while(true){
+                            var data = this.validarEspacio(dataUser.y-1);
+                            if(data){
+                                break;
+                            }
+                        }
+                        this.moveHandler({x:data.x, y:dataUser.y-1, id:-1},this.player1.socket);
+                        ronda = true;
+                        console.log("izquierda") 
+                    }else if(!this.verifyUpPC(dataUser.x, dataUser.y, dataUser.id) && y == 3){
+                        this.moveHandler({x:dataUser.x-1, y:dataUser.y, id:-1},this.player1.socket);
+                        ronda = true;
+                        console.log("arriba") 
+                    }else{
+                        ronda = false;
+                        console.log(y)
+                    }
+                }else {
+                    this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
+                }
             }
         } else if(nivel == 3){  
-
+            var ronda = false;
+            while(!ronda){
+                var y = this.getRandomInt(1, 4);
+                if(this.verifyBoard()){
+                    if(this.verifyRightPCO(dataUser)){
+                        
+                    }
+                }else {
+                    this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
+                }
+            }
         } 
     }
 
