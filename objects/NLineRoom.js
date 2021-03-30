@@ -1,7 +1,7 @@
 
 module.exports = class NLineRoom{
 
-    constructor(size,winSize, playerInfo, socketPlayer1, code, privateRoom,deleter){
+    constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels){
         this.board = this.createBoard(size);
         this.code = code;
         this.winSize = winSize;
@@ -17,26 +17,31 @@ module.exports = class NLineRoom{
         this.privateRoom = privateRoom;
         this.active = true;
         this.deleter = deleter;
+        this.botInfo = {
+            bot: bots,
+            nivel: nivels
+        }
     }
 
     disconnectionhandler (isPlayer1) {
         this.active = false;
         this.deleter(this);
-        const controller = require('../controllers').PlayerController;
-        // se guarda en al base de datos
-        controller.addGame({
-            player1:this.player1.info.id,
-            player2:this.player2.info.id,
-            player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
-        })
-        this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
-        this.player2.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
-        // se envia la informacion de perdidad al jugador desconectado
+        if(!this.botInfo.bot){
+            const controller = require('../controllers').PlayerController;
+            // se guarda en al base de datos
+            controller.addGame({
+                player1:this.player1.info.id,
+                player2:this.player2.info.id,
+                player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
+            })
+            this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
+            this.player2.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
+            // se envia la informacion de perdidad al jugador desconectado
 
-        // se cierra la conexion
-        //console.log(this.player1.socket);
-        this.player1.socket.disconnect(true);
-        this.player2.socket.disconnect(true);
+            // se cierra la conexion
+            this.player1.socket.disconnect(true);
+            this.player2.socket.disconnect(true);
+        }
     }
 
     moveHandler(data,sendTo){
@@ -57,24 +62,31 @@ module.exports = class NLineRoom{
                 return;
             }
             // se envia la informacion al jugador
-            sendTo.emit('responseBoard', data)
+            if(!this.botInfo.bot || data.id == -1){
+                sendTo.emit('responseBoard', data)
+            }
         }
     }
 
     finishGame(win,playerWinner){
-        this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.active = false;
         this.deleter(this);
-        const controller = require('../controllers').PlayerController;
+        if(this.botInfo.bot){
+            this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+            return;
+        }
+        this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+        this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+        this.player1.socket.disconnect(true);
+        this.player2.socket.disconnect(true);
         // se guarda en al base de datos
+        const controller = require('../controllers').PlayerController;
         controller.addGame({
             player1:this.player1.info.id,
             player2:this.player2.info.id,
             player_winner: playerWinner
         })
-        /*this.player1.socket.disconnect(true);
-        this.player2.socket.disconnect(true);*/
+        
     }
 
     /**
@@ -171,9 +183,181 @@ module.exports = class NLineRoom{
         return true;
     }
 
-    start(){
+    verifyBottomLeftPCO(x,y,id){
+        for(let i = this.winSize-2; i > 0; i--){
+            if(this.board[x+i][y-i].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyBotomRightPCO(x,y,id){
+        for(let i = 0; i < this.winSiz-1; i++){
+            if(this.board[x+i][y+i].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    verifyRightPCO(x,y,id){
+        for(let i = 0; i < this.winSize-1; i++){
+            if(this.board[x][y+i].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyBottomPCO(x,y,id){
+        for(let i = 0; i < this.winSize-1; i++){
+            if(this.board[x+i][y].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyUpPC(x,y,id){
+        console.log(x-1,y)
+        if(x-1 > -1){
+            if(this.board[x-1][y].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyLeftPC(x,y,id){
+        console.log(x,y-1)
+        if(y-1 > -1){
+            if(this.board[x][y-1].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    verifyRightPC(x,y,id){
+        console.log(x,y+1)
+        if(y+1 < this.size){
+            if(this.board[x][y+1].id != id){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    startBot(){
+        this.player1.socket.emit('gameRoomInfo',{board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
+        
+        this.player1.socket.on('disconnect', () => {
+            if(this.active)
+                this.disconnectionhandler(true)
+        });
+
+        //this.cronometro(player1Playing);
+
+        this.player1.socket.on('boardMove', (data) => {
+            this.moveHandler(data,this.player2.socket);
+            this.botfunction(this.botInfo.nivel, this.board.length, data);
+            //cronometro(player1Playing);
+        });
+
+        //if(!this.player1Playing){
+            //this.player1Playing = true;
+            //cronometro(player1Playing);
+            //botfunction(this.botInfo.nivel, this.size);
+        //}
+    }
+
+    getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    botfunction(nivel, size, dataUser){
+        console.log(size)
+        if(nivel == 1){
+            if(this.verifyBoard()){
+                while(true){
+                    var y = this.getRandomInt(0, size-1);
+                    var data = this.validarEspacio(y);
+                    if(data){
+                        break;
+                    }
+                }
+                this.moveHandler({x:data.x, y:data.y, id:-1},this.player1.socket);
+                for (var i in this.board) {
+                    console.log(this.board[i]);
+                }
+            } else {
+                this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
+            }
+        } else if(nivel == 2){
+            var ronda = false;
+            while(!ronda){
+                var y = this.getRandomInt(1, 4);
+                if(this.verifyBoard()){
+                    if(!this.verifyRightPC(dataUser.x, dataUser.y, dataUser.id) && y == 1){
+                        while(true){
+                            var data = this.validarEspacio(dataUser.y+1);
+                            if(data){
+                                break;
+                            }
+                        }
+                        this.moveHandler({x:data.x, y:dataUser.y+1, id:-1},this.player1.socket);   
+                        ronda = true; 
+                        console.log("derecha")    
+                    }else if(!this.verifyLeftPC(dataUser.x, dataUser.y, dataUser.id) && y == 2){
+                        while(true){
+                            var data = this.validarEspacio(dataUser.y-1);
+                            if(data){
+                                break;
+                            }
+                        }
+                        this.moveHandler({x:data.x, y:dataUser.y-1, id:-1},this.player1.socket);
+                        ronda = true;
+                        console.log("izquierda") 
+                    }else if(!this.verifyUpPC(dataUser.x, dataUser.y, dataUser.id) && y == 3){
+                        this.moveHandler({x:dataUser.x-1, y:dataUser.y, id:-1},this.player1.socket);
+                        ronda = true;
+                        console.log("arriba") 
+                    }else{
+                        ronda = false;
+                        console.log(y)
+                    }
+                }else {
+                    this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
+                }
+            }
+        } else if(nivel == 3){  
+            var ronda = false;
+            while(!ronda){
+                var y = this.getRandomInt(1, 4);
+                if(this.verifyBoard()){
+                    if(this.verifyRightPCO(dataUser)){
+                        
+                    }
+                }else {
+                    this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
+                }
+            }
+        } 
+    }
+
+    validarEspacio(y){
+        for(var i = this.board.length-1; i >= 0;i--){
+            if(this.board[i][y].id == 0){
+                return this.board[i][y];
+            }
+        }  
+        return false;
+    }
+
+    startHuman(){
         this.player1.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
-        this.player2.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:!this.player1Playing, player: this.player1.info });
+        this.player2.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:!this.player1Playing, player: this.player1.info});
 
         this.player1.socket.on('disconnect', () => {
             if(this.active)
@@ -192,12 +376,22 @@ module.exports = class NLineRoom{
                 this.moveHandler(data,this.player2.socket);
             }
         });
+
         this.player2.socket.on('boardMove', (data) =>{
             if(!this.player1Playing){
                 this.player1Playing = true;
                 this.moveHandler(data,this.player1.socket);
             }
         });
+    }
+
+    start(){
+        console.log(this.botInfo)
+        if(this.botInfo.bot == true){
+            this.startBot();
+        } else {
+            this.startHuman();
+        }
     }
 
     cronometro(jugador){
