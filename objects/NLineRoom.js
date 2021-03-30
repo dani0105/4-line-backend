@@ -39,7 +39,6 @@ module.exports = class NLineRoom{
             // se envia la informacion de perdidad al jugador desconectado
 
             // se cierra la conexion
-            //console.log(this.player1.socket);
             this.player1.socket.disconnect(true);
             this.player2.socket.disconnect(true);
         }
@@ -70,23 +69,24 @@ module.exports = class NLineRoom{
     }
 
     finishGame(win,playerWinner){
+        this.active = false;
+        this.deleter(this);
         if(this.botInfo.bot){
             this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
             return;
         }
         this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        this.active = false;
-        this.deleter(this);
-        const controller = require('../controllers').PlayerController;
+        this.player1.socket.disconnect(true);
+        this.player2.socket.disconnect(true);
         // se guarda en al base de datos
+        const controller = require('../controllers').PlayerController;
         controller.addGame({
             player1:this.player1.info.id,
             player2:this.player2.info.id,
             player_winner: playerWinner
         })
-        /*this.player1.socket.disconnect(true);
-        this.player2.socket.disconnect(true);*/
+        
     }
 
     /**
