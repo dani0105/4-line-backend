@@ -1,5 +1,7 @@
-//const FacebookMiddlewares = require('./facebook-verify');
+const verifyTokenHTTP = require('./verifyTokenHTTP');
+const verifyTokenSocket = require('./verifyTokenSocket');
 
 module.exports = {
-   
+    verifyTokenHTTP,
+    verifyTokenSocket
 };
