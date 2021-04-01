@@ -1,5 +1,7 @@
 const { REQUEST_HEADER_FIELDS_TOO_LARGE } = require('http-status-codes');
 var pararTiempo = false;
+var pause = false;
+var timer = 15;
 module.exports = class NLineRoom{
 
     constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels){
@@ -43,7 +45,7 @@ module.exports = class NLineRoom{
             this.player1.socket.disconnect(true);
             this.player2.socket.disconnect(true);
         }else if(this.botInfo){ 
-           // this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
+            // this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
             // se cierra la conexion
             this.player1.socket.disconnect(true);
             console.log("entro aqui")
@@ -189,38 +191,38 @@ module.exports = class NLineRoom{
         return true;
     }
 
-    verifyBottomLeftPCO(x,y,ids){   
+    verifyBottomLeftPCO(x,y,id){    
         for(let i = this.winSize-2; i > 0; i--){
             console.log(this.board[x][y+i].id, this.board[x][y+i].x, this.board[x][y+i].y)
-            if(this.board[x+i][y-i].id != ids){
+            if(this.board[x+i][y-i].id != id){
                 return false;
             }
         }
         return true;
     }
 
-    verifyBotomRightPCO(x,y,ids){
+    verifyBotomRightPCO(x,y,id){
         for(let i = 0; i < this.winSiz-1; i++){
-            if(this.board[x+i][y+i].id != ids){
+            if(this.board[x+i][y+i].id != id){
                 return false;
             }
         }
         return true;
     }
     
-    verifyRightPCO(x,y,ids){
+    verifyRightPCO(x,y,id){
         for(let i = 0; i < this.winSize-1; i++){
             console.log(this.board[x][y+i].id)
-            if(this.board[x][y+i].id != ids){
+            if(this.board[x][y+i].id != id){
                 return false;
             }
         }
         return true;
     }
 
-    verifyBottomPCO(x,y,ids){
+    verifyBottomPCO(x,y,id){
         for(let i = 0; i < this.winSize-1; i++){
-            if(this.board[x+i][y].id != ids){
+            if(this.board[x+i][y].id != id){
                 return false;
             }
         }
@@ -397,13 +399,24 @@ module.exports = class NLineRoom{
                 this.disconnectionhandler(true)
         });
 
-        this.cronometro(this.player1Playing);
+        this.player1.socket.on('pauseGame', (data) => {
+            if(data){
+                //pausar el tiempo aquí
+                pararTiempo = true;
+                this.player1.socket.off('boardMove');
+            }else{
+                this.cronometro(this.player1Playing, timer);
+                this.player1.socket.on('boardMove');
+            }
+        });
+
+        this.cronometro(this.player1Playing, 15);
 
         this.player1.socket.on('boardMove', (data) => {
             pararTiempo = true;
             this.moveHandler(data,this.player2.socket);
             this.botfunction(this.botInfo.nivel, this.board.length, data);
-            this.cronometro(this.player1Playing);
+            this.cronometro(this.player1Playing, 15);
         });
         
     }
@@ -425,30 +438,34 @@ module.exports = class NLineRoom{
         this.player1.socket.on('pauseGame', (data) => {
             if(data){
                 //pausar el tiempo aquí
+                pararTiempo = true;
                 this.player1.socket.off('boardMove');
                 this.player2.socket.emit('pauseGame', true);
             }else{
+                this.cronometro(this.player1Playing, timer);
                 this.player1.socket.on('boardMove');
             }
         });
 
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
+                pararTiempo = true;
                 this.player2.socket.off('boardMove');
                 this.player1.socket.emit('pauseGame', true);
             }else{
+                this.cronometro(this.player1Playing, timer);
                 this.player1.socket.on('boardMove');
             }
         });
 
-        this.cronometro(this.player1Playing);
+        this.cronometro(this.player1Playing, 15);
 
         this.player1.socket.on('boardMove', (data) => {
             if(this.player1Playing){
                 pararTiempo = true;
                 this.moveHandler(data,this.player2.socket);
                 this.player1Playing = false;
-                this.cronometro(this.player1Playing);
+                this.cronometro(this.player1Playing, 15);
             }
         });
 
@@ -457,7 +474,7 @@ module.exports = class NLineRoom{
                 pararTiempo = true;
                 this.moveHandler(data,this.player1.socket);
                 this.player1Playing = true;
-                this.cronometro(this.player1Playing);
+                this.cronometro(this.player1Playing, 15);
             }
         });
     }
@@ -471,15 +488,13 @@ module.exports = class NLineRoom{
         }
     }
 
-    cronometro(jugador){
+    cronometro(jugador, time){
         const modulo = require('proyecto-2c-crono');
-        const cont = new modulo.Descontador(15);
+        const cont = new modulo.Descontador(time);
         var d = cont.start().subscribe(
             data =>  {
-                console.log(data)
-                console.log(pararTiempo)
                 if(pararTiempo){
-                    console.log("se acabo")
+                    timer = data
                     d.unsubscribe();
                     pararTiempo = false;
                 }
@@ -487,12 +502,14 @@ module.exports = class NLineRoom{
                     d.unsubscribe();
                     if(jugador === true){
                         this.player1.socket.disconnect(true);
+                        this.player1.socket.off('boardMove');
+                        this.player2.socket.off('boardMove');
                         pararTiempo = false;
-                        console.log("entro aqui 3")
                     }else if(jugador === false){
                         this.player2.socket.disconnect(true);
+                        this.player1.socket.off('boardMove');
+                        this.player2.socket.off('boardMove');
                         pararTiempo = false;
-                        console.log("entro aqui 2")
                     }
                 }
             }
@@ -515,15 +532,5 @@ module.exports = class NLineRoom{
             board.push(subCol);
         } 
         return board;
-    }
-
-    pauseGame = (socket,client) => {
-        client.on("pauseGame", (data)=>{
-            
-            //código para pausar cronómetro
-            console.log("Hoooooolaaaaaaaa")
-            client.emit('pauseGame', isPaused);
-            
-        });
     }
 }
