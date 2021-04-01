@@ -447,14 +447,29 @@ module.exports = class NLineRoom{
             }
         });
 
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.player1.socket.off('boardMove');
+                this.player2.socket.emit('leaveGame', true);
+                this.player1.socket.disconnect(true);
+            }
+        });
+
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
                 pararTiempo = true;
-                this.player2.socket.off('boardMove');
-                this.player1.socket.emit('pauseGame', true);
+                
             }else{
                 this.cronometro(this.player1Playing, timer);
                 this.player1.socket.on('boardMove');
+            }
+        });
+
+        this.player2.socket.on('leaveGame', (data) => {
+            if(data){
+                this.player2.socket.off('boardMove');
+                this.player1.socket.emit('pauseGame', true);
+                this.player2.socket.disconnect(true);
             }
         });
 
@@ -501,14 +516,14 @@ module.exports = class NLineRoom{
                 if (data === 'FINISH') {
                     d.unsubscribe();
                     if(jugador === true){
-                        this.player1.socket.disconnect(true);
                         this.player1.socket.off('boardMove');
                         this.player2.socket.off('boardMove');
+                        this.player1.socket.disconnect(true);
                         pararTiempo = false;
                     }else if(jugador === false){
-                        this.player2.socket.disconnect(true);
                         this.player1.socket.off('boardMove');
                         this.player2.socket.off('boardMove');
+                        this.player2.socket.disconnect(true);
                         pararTiempo = false;
                     }
                 }
