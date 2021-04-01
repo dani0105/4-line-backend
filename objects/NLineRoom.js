@@ -422,6 +422,25 @@ module.exports = class NLineRoom{
                 this.disconnectionhandler(false)
         });
 
+        this.player1.socket.on('pauseGame', (data) => {
+            if(data){
+                //pausar el tiempo aquí
+                this.player1.socket.off('boardMove');
+                this.player2.socket.emit('pauseGame', true);
+            }else{
+                this.player1.socket.on('boardMove');
+            }
+        });
+
+        this.player2.socket.on('pauseGame', (data) => {
+            if(data){
+                this.player2.socket.off('boardMove');
+                this.player1.socket.emit('pauseGame', true);
+            }else{
+                this.player1.socket.on('boardMove');
+            }
+        });
+
         this.cronometro(this.player1Playing);
 
         this.player1.socket.on('boardMove', (data) => {
