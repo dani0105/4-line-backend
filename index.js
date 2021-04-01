@@ -50,9 +50,9 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 
 app.use('/auth', Route.AuthRoute);
-app.use('/player', Middlewares.verifyTokenHTTP(), Route.PlayerRoute);
+app.use('/player', /*Middlewares.verifyTokenHTTP(),*/ Route.PlayerRoute);
 
-io.use(Middlewares.verifyTokenSocket()).on("connection", (client) => {
+io./*use(/*Middlewares.verifyTokenSocket()).*/on("connection", (client) => {
     Controller.BoardController.createGameRoom(io, client);
     Controller.BoardController.connectGameRoom(io, client);
     Controller.BoardController.searchGame(io, client);
