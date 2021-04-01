@@ -471,4 +471,14 @@ module.exports = class NLineRoom{
         } 
         return board;
     }
+
+    pauseGame = (socket,client) => {
+        client.on("pauseGame", (data)=>{
+            
+            //código para pausar cronómetro
+            console.log("Hoooooolaaaaaaaa")
+            client.emit('pauseGame', isPaused);
+            
+        });
+    }
 }
