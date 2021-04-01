@@ -140,7 +140,7 @@ generateToken = (id,email,username) => {
         email:email
     },process.env.SERVER_SCRET,
     {
-        expiresIn: '1h',
+        expiresIn: process.env.TOKEN_LIFE,
         subject:email
     });
 }
