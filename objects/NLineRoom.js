@@ -1,6 +1,5 @@
 const { REQUEST_HEADER_FIELDS_TOO_LARGE } = require('http-status-codes');
 var pararTiempo = false;
-var pause = false;
 var timer = 15;
 module.exports = class NLineRoom{
 
@@ -79,6 +78,7 @@ module.exports = class NLineRoom{
         this.deleter(this);
         if(this.botInfo.bot){
             this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+            this.player1.socket.disconnect(true);
             return;
         }
         this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
@@ -317,7 +317,6 @@ module.exports = class NLineRoom{
     }
 
     botfunction(nivel, size, dataUser){
-        console.log(size)
         if(nivel == 1){
             if(this.verifyBoard()){
                 while(true){
@@ -397,28 +396,10 @@ module.exports = class NLineRoom{
                 this.disconnectionhandler(true)
         });
 
-        this.player1.socket.on('pauseGame', (data) => {
-            if(data){
-                //pausar el tiempo aquí
-                pararTiempo = true;
-            }else{
-                this.cronometro(this.player1Playing, timer);
-            }
-        });
-
-        this.player1.socket.on('leaveGame', (data) => {
-            if(data){
-                this.player1.socket.disconnect(true);
-            }
-        });
-
-        this.cronometro(this.player1Playing, 15);
-
         this.player1.socket.on('boardMove', (data) => {
             pararTiempo = true;
             this.moveHandler(data,this.player2.socket);
             this.botfunction(this.botInfo.nivel, this.board.length, data);
-            this.cronometro(this.player1Playing, 15);
         });
         
     }
@@ -447,24 +428,12 @@ module.exports = class NLineRoom{
             }
         });
 
-        this.player1.socket.on('leaveGame', (data) => {
-            if(data){
-                this.player1.socket.disconnect(true);
-            }
-        });
-
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
                 pararTiempo = true;     
                 this.player1.socket.emit('pauseGame', true);          
             }else{
                 this.cronometro(this.player1Playing, timer);
-            }
-        });
-
-        this.player2.socket.on('Game', (data) => {
-            if(data){
-                this.player2.socket.disconnect(true);
             }
         });
 
@@ -490,7 +459,6 @@ module.exports = class NLineRoom{
     }
 
     start(){
-        console.log(this.botInfo)
         if(this.botInfo.bot == true){
             this.startBot();
         } else {
@@ -503,21 +471,23 @@ module.exports = class NLineRoom{
         const cont = new modulo.Descontador(time);
         var d = cont.start().subscribe(
             data =>  {
+                console.log(data);
+                console.log(pararTiempo);
                 if(pararTiempo){
-                    timer = data
+                    timer = data.split(":");
+                    timer = timer[2];
                     d.unsubscribe();
                     pararTiempo = false;
+                }
+                if(!this.active){
+                    d.unsubscribe();
                 }
                 if (data === 'FINISH') {
                     d.unsubscribe();
                     if(jugador === true){
-                        this.player1.socket.off('boardMove');
-                        this.player2.socket.off('boardMove');
                         this.player1.socket.disconnect(true);
                         pararTiempo = false;
                     }else if(jugador === false){
-                        this.player1.socket.off('boardMove');
-                        this.player2.socket.off('boardMove');
                         this.player2.socket.disconnect(true);
                         pararTiempo = false;
                     }
