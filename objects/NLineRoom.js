@@ -45,10 +45,8 @@ module.exports = class NLineRoom{
             this.player1.socket.disconnect(true);
             this.player2.socket.disconnect(true);
         }else if(this.botInfo){ 
-            // this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
             // se cierra la conexion
             this.player1.socket.disconnect(true);
-            console.log("entro aqui")
         }
     }
 
@@ -403,10 +401,14 @@ module.exports = class NLineRoom{
             if(data){
                 //pausar el tiempo aquí
                 pararTiempo = true;
-                this.player1.socket.off('boardMove');
             }else{
                 this.cronometro(this.player1Playing, timer);
-                this.player1.socket.on('boardMove');
+            }
+        });
+
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.player1.socket.disconnect(true);
             }
         });
 
@@ -439,36 +441,29 @@ module.exports = class NLineRoom{
             if(data){
                 //pausar el tiempo aquí
                 pararTiempo = true;
-                this.player1.socket.off('boardMove');
                 this.player2.socket.emit('pauseGame', true);
             }else{
                 this.cronometro(this.player1Playing, timer);
-                this.player1.socket.on('boardMove');
             }
         });
 
         this.player1.socket.on('leaveGame', (data) => {
             if(data){
-                this.player1.socket.off('boardMove');
-                this.player2.socket.emit('leaveGame', true);
                 this.player1.socket.disconnect(true);
             }
         });
 
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
-                pararTiempo = true;
-                
+                pararTiempo = true;     
+                this.player1.socket.emit('pauseGame', true);          
             }else{
                 this.cronometro(this.player1Playing, timer);
-                this.player1.socket.on('boardMove');
             }
         });
 
-        this.player2.socket.on('leaveGame', (data) => {
+        this.player2.socket.on('Game', (data) => {
             if(data){
-                this.player2.socket.off('boardMove');
-                this.player1.socket.emit('pauseGame', true);
                 this.player2.socket.disconnect(true);
             }
         });
