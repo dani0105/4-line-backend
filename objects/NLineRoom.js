@@ -1,4 +1,7 @@
-
+const { REQUEST_HEADER_FIELDS_TOO_LARGE } = require('http-status-codes');
+var pararTiempo = false;
+var pause = false;
+var timer = 15;
 module.exports = class NLineRoom{
 
     constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels){
@@ -41,6 +44,9 @@ module.exports = class NLineRoom{
             // se cierra la conexion
             this.player1.socket.disconnect(true);
             this.player2.socket.disconnect(true);
+        }else if(this.botInfo){ 
+            // se cierra la conexion
+            this.player1.socket.disconnect(true);
         }
     }
 
@@ -183,8 +189,9 @@ module.exports = class NLineRoom{
         return true;
     }
 
-    verifyBottomLeftPCO(x,y,id){
+    verifyBottomLeftPCO(x,y,id){    
         for(let i = this.winSize-2; i > 0; i--){
+            console.log(this.board[x][y+i].id, this.board[x][y+i].x, this.board[x][y+i].y)
             if(this.board[x+i][y-i].id != id){
                 return false;
             }
@@ -203,6 +210,7 @@ module.exports = class NLineRoom{
     
     verifyRightPCO(x,y,id){
         for(let i = 0; i < this.winSize-1; i++){
+            console.log(this.board[x][y+i].id)
             if(this.board[x][y+i].id != id){
                 return false;
             }
@@ -249,31 +257,63 @@ module.exports = class NLineRoom{
         return true;
     }
 
-    startBot(){
-        this.player1.socket.emit('gameRoomInfo',{board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
-        
-        this.player1.socket.on('disconnect', () => {
-            if(this.active)
-                this.disconnectionhandler(true)
-        });
-
-        //this.cronometro(player1Playing);
-
-        this.player1.socket.on('boardMove', (data) => {
-            this.moveHandler(data,this.player2.socket);
-            this.botfunction(this.botInfo.nivel, this.board.length, data);
-            //cronometro(player1Playing);
-        });
-
-        //if(!this.player1Playing){
-            //this.player1Playing = true;
-            //cronometro(player1Playing);
-            //botfunction(this.botInfo.nivel, this.size);
-        //}
-    }
-
     getRandomInt(min, max) {
         return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    verifyId(id){
+        for( let r = 0; r < this.board.length; r++){
+            for( let c = 0; c < this.board.length; c++){
+                if(this.board[r][c].id == id){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    botNivel2(dataUser){
+        var ronda = false;
+        while(!ronda){
+            var y = this.getRandomInt(1, 4);
+            if(!this.verifyRightPC(dataUser.x, dataUser.y, dataUser.id) && y == 1){
+                this.moveHandler({x:this.returnXData(dataUser.y+1).x, y:dataUser.y+1, id:-1},this.player1.socket);   
+                ronda = true; 
+                console.log("derecha")    
+            }else if(!this.verifyLeftPC(dataUser.x, dataUser.y, dataUser.id) && y == 2){
+                this.moveHandler({x:this.returnXData(dataUser.y-1).x, y:dataUser.y-1, id:-1},this.player1.socket);
+                ronda = true;
+                console.log("izquierda") 
+            }else if(!this.verifyUpPC(dataUser.x, dataUser.y, dataUser.id) && y == 3){
+                this.moveHandler({x:dataUser.x-1, y:dataUser.y, id:-1},this.player1.socket);
+                ronda = true;
+                console.log("arriba") 
+            }else{
+                ronda = false;
+                console.log(y)
+            }
+        }
+    }
+
+    returnXData(y){
+        while(true){
+            var data = this.validarEspacio(y);
+            if(data){
+                return data;
+            }
+            console.log("z");
+        }
+    }
+
+    validarEspacio(y){
+        for(var i = this.board.length-1; i >= 0;i--){
+            if(this.board[i][y].id == 0){
+                return this.board[i][y];
+            }
+        }  
+        console.log(y);
+        console.log(this.board[i][y].id);
+        return false;
     }
 
     botfunction(nivel, size, dataUser){
@@ -288,56 +328,59 @@ module.exports = class NLineRoom{
                     }
                 }
                 this.moveHandler({x:data.x, y:data.y, id:-1},this.player1.socket);
-                for (var i in this.board) {
-                    console.log(this.board[i]);
-                }
             } else {
                 this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
             }
         } else if(nivel == 2){
-            var ronda = false;
-            while(!ronda){
-                var y = this.getRandomInt(1, 4);
-                if(this.verifyBoard()){
-                    if(!this.verifyRightPC(dataUser.x, dataUser.y, dataUser.id) && y == 1){
-                        while(true){
-                            var data = this.validarEspacio(dataUser.y+1);
-                            if(data){
-                                break;
-                            }
-                        }
-                        this.moveHandler({x:data.x, y:dataUser.y+1, id:-1},this.player1.socket);   
-                        ronda = true; 
-                        console.log("derecha")    
-                    }else if(!this.verifyLeftPC(dataUser.x, dataUser.y, dataUser.id) && y == 2){
-                        while(true){
-                            var data = this.validarEspacio(dataUser.y-1);
-                            if(data){
-                                break;
-                            }
-                        }
-                        this.moveHandler({x:data.x, y:dataUser.y-1, id:-1},this.player1.socket);
-                        ronda = true;
-                        console.log("izquierda") 
-                    }else if(!this.verifyUpPC(dataUser.x, dataUser.y, dataUser.id) && y == 3){
-                        this.moveHandler({x:dataUser.x-1, y:dataUser.y, id:-1},this.player1.socket);
-                        ronda = true;
-                        console.log("arriba") 
-                    }else{
-                        ronda = false;
-                        console.log(y)
-                    }
-                }else {
-                    this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
-                }
+            if(this.verifyBoard()){
+                this.botNivel2(dataUser);
+            }else {
+                this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
             }
         } else if(nivel == 3){  
             var ronda = false;
             while(!ronda){
                 var y = this.getRandomInt(1, 4);
+                console.log("k");
                 if(this.verifyBoard()){
-                    if(this.verifyRightPCO(dataUser)){
-                        
+                    console.log("n");
+                    for( let r = 0; r < this.board.length; r++){
+                        console.log("r");
+                        for( let c = 0; c < this.board.length; c++){
+                            console.log("c");
+                            if(this.verifyId(-1)){
+                                console.log("f");
+                                if(c+(this.winSize-1) < this.board.length){
+                                    if(this.verifyRight(r, c, -1)){
+                                        this.moveHandler({x:this.returnXData(c+1).x, y:c, id:-1},this.player1.socket); 
+                                        ronda = true;
+                                        break;
+                                    }
+                                }else if(r+(this.winSize-1) < this.board.length){
+                                    if(this.verifyBottom(r, c, -1)){
+                                        this.moveHandler({x:this.returnXData(c).x, y:c, id:-1},this.player1.socket); 
+                                        ronda = true;
+                                        break;
+                                    }else if(c-(this.winSize-1) >= 0){
+                                        if(this.verifyBottomLeft(r, c, -1)){
+                                            this.moveHandler({x:this.returnXData(c+1).x, y:c, id:-1},this.player1.socket); 
+                                            ronda = true;
+                                            break;
+                                        }
+                                    }else if(c+(this.winSize-1) < this.board.length){
+                                        if(this.verifyBotomRight(r, c, -1)){
+                                            this.moveHandler({x:this.returnXData(c+1).x, y:c, id:-1},this.player1.socket); 
+                                            ronda = true;
+                                            break;
+                                        }
+                                    }
+                                }else{
+                                    this.botNivel2(dataUser);
+                                }
+                            }else{
+                                this.botNivel2(dataUser);
+                            }
+                        }
                     }
                 }else {
                     this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
@@ -346,13 +389,38 @@ module.exports = class NLineRoom{
         } 
     }
 
-    validarEspacio(y){
-        for(var i = this.board.length-1; i >= 0;i--){
-            if(this.board[i][y].id == 0){
-                return this.board[i][y];
+    startBot(){
+        this.player1.socket.emit('gameRoomInfo',{board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
+        
+        this.player1.socket.on('disconnect', () => {
+            if(this.active)
+                this.disconnectionhandler(true)
+        });
+
+        this.player1.socket.on('pauseGame', (data) => {
+            if(data){
+                //pausar el tiempo aquí
+                pararTiempo = true;
+            }else{
+                this.cronometro(this.player1Playing, timer);
             }
-        }  
-        return false;
+        });
+
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.player1.socket.disconnect(true);
+            }
+        });
+
+        this.cronometro(this.player1Playing, 15);
+
+        this.player1.socket.on('boardMove', (data) => {
+            pararTiempo = true;
+            this.moveHandler(data,this.player2.socket);
+            this.botfunction(this.botInfo.nivel, this.board.length, data);
+            this.cronometro(this.player1Playing, 15);
+        });
+        
     }
 
     startHuman(){
@@ -369,18 +437,54 @@ module.exports = class NLineRoom{
                 this.disconnectionhandler(false)
         });
 
+        this.player1.socket.on('pauseGame', (data) => {
+            if(data){
+                //pausar el tiempo aquí
+                pararTiempo = true;
+                this.player2.socket.emit('pauseGame', true);
+            }else{
+                this.cronometro(this.player1Playing, timer);
+            }
+        });
+
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.player1.socket.disconnect(true);
+            }
+        });
+
+        this.player2.socket.on('pauseGame', (data) => {
+            if(data){
+                pararTiempo = true;     
+                this.player1.socket.emit('pauseGame', true);          
+            }else{
+                this.cronometro(this.player1Playing, timer);
+            }
+        });
+
+        this.player2.socket.on('Game', (data) => {
+            if(data){
+                this.player2.socket.disconnect(true);
+            }
+        });
+
+        this.cronometro(this.player1Playing, 15);
 
         this.player1.socket.on('boardMove', (data) => {
             if(this.player1Playing){
-                this.player1Playing = false;
+                pararTiempo = true;
                 this.moveHandler(data,this.player2.socket);
+                this.player1Playing = false;
+                this.cronometro(this.player1Playing, 15);
             }
         });
 
         this.player2.socket.on('boardMove', (data) =>{
             if(!this.player1Playing){
-                this.player1Playing = true;
+                pararTiempo = true;
                 this.moveHandler(data,this.player1.socket);
+                this.player1Playing = true;
+                this.cronometro(this.player1Playing, 15);
             }
         });
     }
@@ -394,17 +498,28 @@ module.exports = class NLineRoom{
         }
     }
 
-    cronometro(jugador){
+    cronometro(jugador, time){
         const modulo = require('proyecto-2c-crono');
-        const cont = new modulo.Descontador(15);
+        const cont = new modulo.Descontador(time);
         var d = cont.start().subscribe(
             data =>  {
+                if(pararTiempo){
+                    timer = data
+                    d.unsubscribe();
+                    pararTiempo = false;
+                }
                 if (data === 'FINISH') {
                     d.unsubscribe();
                     if(jugador === true){
+                        this.player1.socket.off('boardMove');
+                        this.player2.socket.off('boardMove');
                         this.player1.socket.disconnect(true);
+                        pararTiempo = false;
                     }else if(jugador === false){
+                        this.player1.socket.off('boardMove');
+                        this.player2.socket.off('boardMove');
                         this.player2.socket.disconnect(true);
+                        pararTiempo = false;
                     }
                 }
             }
