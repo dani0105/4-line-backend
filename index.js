@@ -4,9 +4,8 @@ const express = require('express');
 var app = express();
 var server = require('http').Server(app);
 const io = require('socket.io')(server, {
-    cors: {
-        origin: '*'
-    }
+    cors:true,
+    origins:'*:*'
 });
 
 
