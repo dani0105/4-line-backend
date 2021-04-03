@@ -21,7 +21,8 @@ module.exports = class NLineRoom{
         this.deleter = deleter;
         this.botInfo = {
             bot: bots,
-            nivel: nivels
+            nivel: nivels,
+            id: -1
         }
     }
 
@@ -42,8 +43,8 @@ module.exports = class NLineRoom{
 
             // se cierra la conexion
             this.player1.socket.disconnect(true);
-            this.player2.socket.disconnect(true);
-        }else if(this.botInfo){ 
+            this.player2.socket.disconnect(true);       
+        }else if(this.botInfo){  
             // se cierra la conexion
             this.player1.socket.disconnect(true);
         }
@@ -56,7 +57,6 @@ module.exports = class NLineRoom{
             this.board[data.x][data.y].id = data.id;
             
             if(this.verifyWin(data.id)){
-                console.log("Ganador")
                 //Gano el Jugador que movio
                 this.finishGame(1,data.id);
                 return;
@@ -153,6 +153,36 @@ module.exports = class NLineRoom{
         return false;
     }
 
+    verifyPreWinBot(id){
+        for( let r = 0; r < this.board.length; r++){
+            for( let c = 0; c < this.board.length; c++){
+
+                if(this.board[r][c].id != id)
+                    continue
+                
+                if(c+(this.winSize-1) < this.board.length){
+                    if(this.verifyRightPCO(r,c,id)){
+                        return {r,c,num:1};
+                    }
+                }
+                if(r+(this.winSize-1) < this.board.length){
+                    if(this.verifyBottomPCO(r,c,id)){
+                        return {r,c,num:2};
+                    }
+                    if(c+(this.winSize-1) < this.board.length)
+                        if(this.verifyBotomRightPCO(r,c,id)){
+                            return {r,c,num:3};
+                        }
+                    if(c-(this.winSize-1) >= 0)
+                        if(this.verifyBottomLeftPCO(r,c,id)){
+                            return {r,c,num:4};
+                        }
+                }
+            }
+        }
+        return false;
+    }
+
     verifyBottomLeft(x,y,id){
         for(let i = this.winSize-1; i > 0; i--){
             if(this.board[x+i][y-i].id != id){
@@ -190,8 +220,7 @@ module.exports = class NLineRoom{
     }
 
     verifyBottomLeftPCO(x,y,id){    
-        for(let i = this.winSize-2; i > 0; i--){
-            console.log(this.board[x][y+i].id, this.board[x][y+i].x, this.board[x][y+i].y)
+        for(let i = this.winSize-1; i > 0; i--){
             if(this.board[x+i][y-i].id != id){
                 return false;
             }
@@ -210,7 +239,6 @@ module.exports = class NLineRoom{
     
     verifyRightPCO(x,y,id){
         for(let i = 0; i < this.winSize-1; i++){
-            console.log(this.board[x][y+i].id)
             if(this.board[x][y+i].id != id){
                 return false;
             }
@@ -228,7 +256,6 @@ module.exports = class NLineRoom{
     }
 
     verifyUpPC(x,y,id){
-        console.log(x-1,y)
         if(x-1 > -1){
             if(this.board[x-1][y].id != id){
                 return false;
@@ -238,7 +265,6 @@ module.exports = class NLineRoom{
     }
 
     verifyLeftPC(x,y,id){
-        console.log(x,y-1)
         if(y-1 > -1){
             if(this.board[x][y-1].id != id){
                 return false;
@@ -248,8 +274,7 @@ module.exports = class NLineRoom{
     }
 
     verifyRightPC(x,y,id){
-        console.log(x,y+1)
-        if(y+1 < this.size){
+        if(y+1 < this.board.length-1){
             if(this.board[x][y+1].id != id){
                 return false;
             }
@@ -272,6 +297,20 @@ module.exports = class NLineRoom{
         return false;
     }
 
+    verifyIdCont(id, cont){
+        for( let r = 0; r < this.board.length; r++){
+            for( let c = 0; c < this.board.length; c++){
+                if(this.board[r][c].id == id){
+                    cont -= 1;
+                    if(cont==0){
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     botNivel2(dataUser){
         var ronda = false;
         while(!ronda){
@@ -279,40 +318,40 @@ module.exports = class NLineRoom{
             if(!this.verifyRightPC(dataUser.x, dataUser.y, dataUser.id) && y == 1){
                 this.moveHandler({x:this.returnXData(dataUser.y+1).x, y:dataUser.y+1, id:-1},this.player1.socket);   
                 ronda = true; 
-                console.log("derecha")    
             }else if(!this.verifyLeftPC(dataUser.x, dataUser.y, dataUser.id) && y == 2){
                 this.moveHandler({x:this.returnXData(dataUser.y-1).x, y:dataUser.y-1, id:-1},this.player1.socket);
                 ronda = true;
-                console.log("izquierda") 
             }else if(!this.verifyUpPC(dataUser.x, dataUser.y, dataUser.id) && y == 3){
                 this.moveHandler({x:dataUser.x-1, y:dataUser.y, id:-1},this.player1.socket);
                 ronda = true;
-                console.log("arriba") 
             }else{
                 ronda = false;
-                console.log(y)
             }
         }
     }
 
     returnXData(y){
+        var cont = 0;
         while(true){
             var data = this.validarEspacio(y);
             if(data){
                 return data;
             }
-            console.log("z");
+            cont += 1;
+            if(cont ==  5){
+                y -= 1;
+            }
         }
     }
 
     validarEspacio(y){
-        for(var i = this.board.length-1; i >= 0;i--){
-            if(this.board[i][y].id == 0){
-                return this.board[i][y];
-            }
-        }  
-        console.log(y);
-        console.log(this.board[i][y].id);
+        if(y<this.board.length){
+            for(var i = this.board.length-1; i >= 0;i--){
+                if(this.board[i][y].id == 0){
+                    return this.board[i][y];
+                }
+            }  
+        }
         return false;
     }
 
@@ -340,46 +379,37 @@ module.exports = class NLineRoom{
             var ronda = false;
             while(!ronda){
                 var y = this.getRandomInt(1, 4);
-                console.log("k");
                 if(this.verifyBoard()){
-                    console.log("n");
-                    for( let r = 0; r < this.board.length; r++){
-                        console.log("r");
-                        for( let c = 0; c < this.board.length; c++){
-                            console.log("c");
-                            if(this.verifyId(-1)){
-                                console.log("f");
-                                if(c+(this.winSize-1) < this.board.length){
-                                    if(this.verifyRight(r, c, -1)){
-                                        this.moveHandler({x:this.returnXData(c+1).x, y:c, id:-1},this.player1.socket); 
-                                        ronda = true;
-                                        break;
-                                    }
-                                }else if(r+(this.winSize-1) < this.board.length){
-                                    if(this.verifyBottom(r, c, -1)){
-                                        this.moveHandler({x:this.returnXData(c).x, y:c, id:-1},this.player1.socket); 
-                                        ronda = true;
-                                        break;
-                                    }else if(c-(this.winSize-1) >= 0){
-                                        if(this.verifyBottomLeft(r, c, -1)){
-                                            this.moveHandler({x:this.returnXData(c+1).x, y:c, id:-1},this.player1.socket); 
-                                            ronda = true;
-                                            break;
-                                        }
-                                    }else if(c+(this.winSize-1) < this.board.length){
-                                        if(this.verifyBotomRight(r, c, -1)){
-                                            this.moveHandler({x:this.returnXData(c+1).x, y:c, id:-1},this.player1.socket); 
-                                            ronda = true;
-                                            break;
-                                        }
-                                    }
-                                }else{
-                                    this.botNivel2(dataUser);
-                                }
+                    if(this.verifyId(-1)){                              
+                        if(this.verifyIdCont(-1, 3)){
+                            data = this.verifyPreWinBot(-1);
+                            if(data == true && data.num == 1){
+                                this.moveHandler({x:this.returnXData(data.c+1).x, y:data.c, id:-1},this.player1.socket); 
+                                ronda = true;
+                                break;
+                            }else if(data == true && data.num == 2){
+                                this.moveHandler({x:this.returnXData(data.c).x, y:data.c, id:-1},this.player1.socket); 
+                                ronda = true;
+                                break;
+                            }else if(data == true && data.num == 3){
+                                this.moveHandler({x:this.returnXData(data.c+1).x, y:data.c, id:-1},this.player1.socket); 
+                                ronda = true;
+                                break;
+                            }else if(data == true && data.num == 4){
+                                this.moveHandler({x:this.returnXData(data.c+1).x, y:data.c, id:-1},this.player1.socket); 
+                                ronda = true;
+                                break;
                             }else{
                                 this.botNivel2(dataUser);
+                                ronda = true;
                             }
+                        }else{
+                            this.botNivel2(dataUser);
+                            ronda = true;
                         }
+                    }else{
+                        this.botNivel2(dataUser);
+                        ronda = true;
                     }
                 }else {
                     this.player1.socket.emit("finishGameRoom",{win:2,playerWinner:0});
@@ -394,6 +424,12 @@ module.exports = class NLineRoom{
         this.player1.socket.on('disconnect', () => {
             if(this.active)
                 this.disconnectionhandler(true)
+        });
+
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.disconnectionhandler(true);
+            }
         });
 
         this.player1.socket.on('boardMove', (data) => {
@@ -422,18 +458,30 @@ module.exports = class NLineRoom{
             if(data){
                 //pausar el tiempo aquí
                 pararTiempo = true;
-                this.player2.socket.emit('pauseGame', true);
+                this.player2.socket.emit('pausedGame', true);
             }else{
                 this.cronometro(this.player1Playing, timer);
+            }
+        });
+
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.disconnectionhandler(true);
             }
         });
 
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
                 pararTiempo = true;     
-                this.player1.socket.emit('pauseGame', true);          
+                this.player1.socket.emit('pausedGame', true);          
             }else{
                 this.cronometro(this.player1Playing, timer);
+            }
+        });
+
+        this.player2.socket.on('leaveGame', (data) => {
+            if(data){
+                this.disconnectionhandler(true);
             }
         });
 
@@ -471,8 +519,6 @@ module.exports = class NLineRoom{
         const cont = new modulo.Descontador(time);
         var d = cont.start().subscribe(
             data =>  {
-                console.log(data);
-                console.log(pararTiempo);
                 if(pararTiempo){
                     timer = data.split(":");
                     timer = timer[2];
