@@ -21,7 +21,8 @@ module.exports = class NLineRoom{
         this.deleter = deleter;
         this.botInfo = {
             bot: bots,
-            nivel: nivels
+            nivel: nivels,
+            id: -1
         }
     }
 
@@ -42,8 +43,8 @@ module.exports = class NLineRoom{
 
             // se cierra la conexion
             this.player1.socket.disconnect(true);
-            this.player2.socket.disconnect(true);
-        }else if(this.botInfo){ 
+            this.player2.socket.disconnect(true);       
+        }else if(this.botInfo){  
             // se cierra la conexion
             this.player1.socket.disconnect(true);
         }
@@ -56,7 +57,6 @@ module.exports = class NLineRoom{
             this.board[data.x][data.y].id = data.id;
             
             if(this.verifyWin(data.id)){
-                console.log("Ganador")
                 //Gano el Jugador que movio
                 this.finishGame(1,data.id);
                 return;
@@ -239,7 +239,6 @@ module.exports = class NLineRoom{
     
     verifyRightPCO(x,y,id){
         for(let i = 0; i < this.winSize-1; i++){
-            console.log(this.board[x][y+i].id)
             if(this.board[x][y+i].id != id){
                 return false;
             }
@@ -312,24 +311,19 @@ module.exports = class NLineRoom{
         return false;
     }
 
-
     botNivel2(dataUser){
         var ronda = false;
         while(!ronda){
             var y = this.getRandomInt(1, 4);
-            console.log(y);
             if(!this.verifyRightPC(dataUser.x, dataUser.y, dataUser.id) && y == 1){
                 this.moveHandler({x:this.returnXData(dataUser.y+1).x, y:dataUser.y+1, id:-1},this.player1.socket);   
                 ronda = true; 
-                console.log("derecha");
             }else if(!this.verifyLeftPC(dataUser.x, dataUser.y, dataUser.id) && y == 2){
                 this.moveHandler({x:this.returnXData(dataUser.y-1).x, y:dataUser.y-1, id:-1},this.player1.socket);
                 ronda = true;
-                console.log("izquierda"); 
             }else if(!this.verifyUpPC(dataUser.x, dataUser.y, dataUser.id) && y == 3){
                 this.moveHandler({x:dataUser.x-1, y:dataUser.y, id:-1},this.player1.socket);
                 ronda = true;
-                console.log("arriba");
             }else{
                 ronda = false;
             }
@@ -347,7 +341,6 @@ module.exports = class NLineRoom{
             if(cont ==  5){
                 y -= 1;
             }
-            console.log("z");
         }
     }
 
@@ -358,8 +351,6 @@ module.exports = class NLineRoom{
                     return this.board[i][y];
                 }
             }  
-        }else{
-            console.log("r");
         }
         return false;
     }
@@ -388,7 +379,6 @@ module.exports = class NLineRoom{
             var ronda = false;
             while(!ronda){
                 var y = this.getRandomInt(1, 4);
-                console.log("k");
                 if(this.verifyBoard()){
                     if(this.verifyId(-1)){                              
                         if(this.verifyIdCont(-1, 3)){
@@ -436,6 +426,12 @@ module.exports = class NLineRoom{
                 this.disconnectionhandler(true)
         });
 
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.disconnectionhandler(true);
+            }
+        });
+
         this.player1.socket.on('boardMove', (data) => {
             pararTiempo = true;
             this.moveHandler(data,this.player2.socket);
@@ -468,12 +464,24 @@ module.exports = class NLineRoom{
             }
         });
 
+        this.player1.socket.on('leaveGame', (data) => {
+            if(data){
+                this.disconnectionhandler(true);
+            }
+        });
+
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
                 pararTiempo = true;     
                 this.player1.socket.emit('pausedGame', true);          
             }else{
                 this.cronometro(this.player1Playing, timer);
+            }
+        });
+
+        this.player2.socket.on('leaveGame', (data) => {
+            if(data){
+                this.disconnectionhandler(true);
             }
         });
 
@@ -511,8 +519,6 @@ module.exports = class NLineRoom{
         const cont = new modulo.Descontador(time);
         var d = cont.start().subscribe(
             data =>  {
-                console.log(data);
-                console.log(pararTiempo);
                 if(pararTiempo){
                     timer = data.split(":");
                     timer = timer[2];
