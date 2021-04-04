@@ -456,10 +456,10 @@ module.exports = class NLineRoom{
 
         this.player1.socket.on('pauseGame', (data) => {
             if(data){
-                //pausar el tiempo aquí
                 pararTiempo = true;
-                this.player2.socket.emit('pausedGame', true);
+                this.player2.socket.emit('pausedGame', data);
             }else{
+                this.player2.socket.emit('pausedGame', data);
                 this.cronometro(this.player1Playing, timer);
             }
         });
@@ -473,8 +473,9 @@ module.exports = class NLineRoom{
         this.player2.socket.on('pauseGame', (data) => {
             if(data){
                 pararTiempo = true;     
-                this.player1.socket.emit('pausedGame', true);          
+                this.player1.socket.emit('pausedGame', data);          
             }else{
+                this.player1.socket.emit('pausedGame', data);
                 this.cronometro(this.player1Playing, timer);
             }
         });
