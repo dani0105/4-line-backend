@@ -45,6 +45,7 @@ module.exports = class NLineRoom{
             this.player1.socket.disconnect(true);
             this.player2.socket.disconnect(true);       
         }else if(this.botInfo){  
+            this.finishGame(1, this.botInfo.id);
             // se cierra la conexion
             this.player1.socket.disconnect(true);
         }
