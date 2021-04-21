@@ -27,7 +27,7 @@ router.post('/facebook', (req, res, next) => {
             res.status(StatusCodes.OK).json(result);
         else
             res.status(StatusCodes.UNAUTHORIZED).json({ success: false});
-    }).catch(err => {consolo.log(err); res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false })} )
+    }).catch(err => {console.log(err); res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false })} )
 });
 
 router.post('/google', (req, res, next) => {
