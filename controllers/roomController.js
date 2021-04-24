@@ -82,9 +82,10 @@ exports.addRoomUserAccount = async (req) => {
     const client = new Client(credentials);
     try {
         await client.connect();
-        let result = await client.query('call add_room_user_account($1,$2)', [
+        let result = await client.query('call add_room_user_account($1,$2,$3)', [
             req.id_room,
-            req.id_user_account
+            req.id_user_account,
+            req.is_admin == undefined ? null : req.is_admin
         ]).then(result => {
             return result.rows[0];
         }).catch(error => {
@@ -105,9 +106,10 @@ exports.updateRoomUserAccount = async (req) => {
     const client = new Client(credentials);
     try {
         await client.connect();
-        let result = await client.query('call update_room_user_account($1,$2)', [
+        let result = await client.query('call update_room_user_account($1,$2,$3)', [
             req.id,
-            req.is_active == undefined? null:req.is_active 
+            req.is_active == undefined? null:req.is_active,
+            req.is_admin == undefined ? null: req.is_admin
         ]).then(result => {
             return result.rows[0];
         }).catch(error => {
@@ -128,7 +130,7 @@ exports.getRoomUserAccount = async (req) => {
     const client = new Client(credentials);
     try {
         await client.connect();
-        let result = await client.query('call get_room_user_account($1,$2,$3)', [
+        let result = await client.query('select * from get_room_user_account($1,$2,$3)', [
             req.id_room,
             req.page_number,
             req.size
