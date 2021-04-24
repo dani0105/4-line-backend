@@ -1,11 +1,10 @@
 const { Client } = require('pg');
-const StatusCodes = require('http-status-codes').StatusCodes;
 
 const credentials = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    database:process.env.DB_DATABASE,
-    port:process.env.DB_PORT,
+    database: process.env.DB_DATABASE,
+    port: process.env.DB_PORT,
     password: process.env.DB_PASSWORD
 }
 
@@ -41,7 +40,7 @@ exports.getGames = async (req) => {
             req.size,
             req.page_number
         ]).then(result => {
-            return {success:true,data:result.rows};
+            return { success: true, data: result.rows };
         }).catch(error => {
             console.log(error);
             throw error;
