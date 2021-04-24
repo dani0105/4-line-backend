@@ -32,3 +32,28 @@ CREATE TABLE game
             ON DELETE NO ACTION
             NOT VALID
 );
+
+CREATE TABLE room
+(
+    id              SERIAL  PRIMARY KEY,
+    name            VARCHAR(250),
+    password        VARCHAR(250),
+    is_active       BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE room_user_account
+(
+    id              SERIAL  PRIMARY KEY,
+    id_user_account integer,
+    id_room         integer,
+    is_admin        BOOLEAN DEFAULT FALSE,
+    is_active       BOOLEAN DEFAULT TRUE,
+    CONSTRAINT user_account_id FOREIGN KEY (id_user_account) REFERENCES user_account (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT room_id FOREIGN KEY (id_room) REFERENCES room (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
