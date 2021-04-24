@@ -159,3 +159,28 @@ BEGIN
 END;
 $$
 
+CREATE OR REPLACE PROCEDURE public.join_room(
+    _code               INTEGER,
+    _password           character varying,
+    _id_user_account    INTEGER,
+    INOUT success       BOOLEAN DEFAULT false
+)LANGUAGE 'plpgsql'
+AS $BODY$
+DECLARE 
+    _id_room INTEGER;
+    _trash INTEGER;
+begin
+    select 
+        id into _id_room 
+    from 
+        room 
+    where
+        password = _password AND
+        id = _code;
+
+    if (_id_room is not null) THEN
+        call add_room_user_account(_id_room, _id_user_account, false, success, _trash);
+    END IF;
+end ;
+$BODY$;
+

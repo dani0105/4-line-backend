@@ -33,8 +33,8 @@ router.get('/room', (req, res, next) => {
 
 
 
-router.post('/roomUserAccount', (req, res, next) => {
-    controller.addRoomUserAccount(req.body, res, next).then(result => {
+router.post('/joinRoom', (req, res, next) => {
+    controller.joinRoom(req.body, res, next).then(result => {
         if(result.success)
             res.status(StatusCodes.OK).json(result);
         else

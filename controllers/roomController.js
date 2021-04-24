@@ -148,4 +148,28 @@ exports.getRoomUserAccount = async (req) => {
         throw error;
     }
 }
+
+exports.joinRoom = async (req) => {
+    const client = new Client(credentials);
+    try {
+        await client.connect();
+        let result = await client.query('call join_room($1,$2,$3)', [
+            req.code,
+            req.password,
+            req.id_user_account
+        ]).then(result => {
+            return result.rows[0];
+        }).catch(error => {
+            console.log(error);
+            throw error;
+        });
+        client.end();
+        return result;
+    }
+    catch (error) {
+        client.end();
+        throw error;
+    }
+}
+
 module.exports
