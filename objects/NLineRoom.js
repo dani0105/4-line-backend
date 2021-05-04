@@ -461,7 +461,7 @@ module.exports = class NLineRoom{
                 this.player2.socket.emit('pausedGame', data);
             }else{
                 this.player2.socket.emit('pausedGame', data);
-                this.cronometro(this.player1Playing, timer);
+                //this.cronometro(this.player1Playing, timer);
             }
         });
 
@@ -477,7 +477,7 @@ module.exports = class NLineRoom{
                 this.player1.socket.emit('pausedGame', data);          
             }else{
                 this.player1.socket.emit('pausedGame', data);
-                this.cronometro(this.player1Playing, timer);
+                //this.cronometro(this.player1Playing, timer);
             }
         });
 
@@ -487,14 +487,14 @@ module.exports = class NLineRoom{
             }
         });
 
-        this.cronometro(this.player1Playing, 15);
+        //this.cronometro(this.player1Playing, 15);
 
         this.player1.socket.on('boardMove', (data) => {
             if(this.player1Playing){
                 pararTiempo = true;
                 this.moveHandler(data,this.player2.socket);
                 this.player1Playing = false;
-                this.cronometro(this.player1Playing, 15);
+                //this.cronometro(this.player1Playing, 15);
             }
         });
 
@@ -503,7 +503,7 @@ module.exports = class NLineRoom{
                 pararTiempo = true;
                 this.moveHandler(data,this.player1.socket);
                 this.player1Playing = true;
-                this.cronometro(this.player1Playing, 15);
+                //this.cronometro(this.player1Playing, 15);
             }
         });
     }
