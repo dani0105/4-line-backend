@@ -97,27 +97,28 @@ var rooms = [];
 
 exports.joinRoom = (socket,client) => {
     client.on("joinRoom", (data)=>{
-
+        console.log("El usuario",data.user.username," con id ",data.user.id)
         var room = null;
         data.user.socket = client;
+        data.user.isPlaying = true;
         for(let i = 0; i < rooms.length; i++){
             if(rooms[i].idRoom == data.idRoom){
                 var exist = false;
-                for(let i = 0; i < rooms[i].user.length; i++){
-                    if(rooms[i].user[i].id == data.user.id){
+                room = rooms[i];
+                for(let i = 0; i < room.user.length; i++){
+                    if(room.user[i].id == data.user.id){
                         exist = true;
                         break
                     }
                 }
-                
+
                 if(!exist)
-                    rooms[i].user.push(data.user);
-                room = rooms[i];
+                    room.user.push(data.user);
                 break
             }
         }
         if(!room){
-            room = {idRoom:data.idRoom,user:[data.user]};
+            room = {idRoom:data.idRoom,user:[{id:3,username:'Test User',picture:'',isPlaying:true},data.user]};
             rooms.push(room);
         }
 
@@ -130,7 +131,8 @@ exports.joinRoom = (socket,client) => {
             users.push({
                 id:user.id,
                 username:user.username,
-                picture:user.picture
+                picture:user.picture,
+                isPlaying:data.user.isPlaying
             })
         }
         client.emit('roomInfo',users);
@@ -140,23 +142,18 @@ exports.joinRoom = (socket,client) => {
             username: data.user.username,
             id: data.user.id,
             picture: data.user.picture,
+            isPlaying:data.user.isPlaying
         });
-    });
-}
 
-
-exports.exitRoom = (socket,client) => {
-    client.on("exitRoom", (data)=>{
-        client.leave(data.idRoom);
-        socket.in(data.idRoom).emit('userDisconnected',data.user);
-    });
-}
-
-
-exports.exitRoom = (socket,client) => {
-    client.on(" ", (data)=>{
-        client.leave(data.idRoom);
-        socket.in(data.idRoom).emit('userDisconnected',data.user);
+        client.on('disconnect',() => {
+            console.log("usuario desconectado")
+            client.leave(data.idRoom);
+            socket.in(data.idRoom).emit('userDisconnected',{
+                id:data.user.id,
+                username:data.user.username,
+                picture: data.user.picture
+            });
+        });
     });
 }
 
