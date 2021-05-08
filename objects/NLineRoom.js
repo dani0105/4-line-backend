@@ -3,7 +3,7 @@ var pararTiempo = false;
 var timer = 15;
 module.exports = class NLineRoom{
 
-    constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels){
+    constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels, roomId){
         this.board = this.createBoard(size);
         this.code = code;
         this.winSize = winSize;
@@ -11,6 +11,7 @@ module.exports = class NLineRoom{
             info: playerInfo,
             socket:socketPlayer1
         }
+        this.roomId = roomId;
         this.player2 = {
             info:null,
             socket:null
@@ -37,17 +38,17 @@ module.exports = class NLineRoom{
                 player2:this.player2.info.id,
                 player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
             })
-            this.player1.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
-            this.player2.socket.emit("finishGameRoom",{win:0,playerWinner:isPlayer1?this.player2.info.id:this.player1.info.id}); // 0 : desconectado
+            this.player1.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
+            this.player2.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
             // se envia la informacion de perdidad al jugador desconectado
 
             // se cierra la conexion
-            this.player1.socket.disconnect(true);
-            this.player2.socket.disconnect(true);       
+            this.player1.socket.offAny();
+            this.player2.socket.offAny();       
         }else if(this.botInfo){  
             this.finishGame(1, this.botInfo.id);
             // se cierra la conexion
-            this.player1.socket.disconnect(true);
+            this.player1.socket.offAny();
         }
     }
 
@@ -56,7 +57,6 @@ module.exports = class NLineRoom{
             //El movimiento es valido
 
             this.board[data.x][data.y].id = data.id;
-            
             if(this.verifyWin(data.id)){
                 //Gano el Jugador que movio
                 this.finishGame(1,data.id);
@@ -79,13 +79,13 @@ module.exports = class NLineRoom{
         this.deleter(this);
         if(this.botInfo.bot){
             this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-            this.player1.socket.disconnect(true);
+            this.player1.socket.offAny();
             return;
         }
         this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        this.player1.socket.disconnect(true);
-        this.player2.socket.disconnect(true);
+        this.player1.socket.offAny();
+        this.player2.socket.offAny();
         // se guarda en al base de datos
         const controller = require('../controllers').PlayerController;
         controller.addGame({
@@ -466,6 +466,7 @@ module.exports = class NLineRoom{
         });
 
         this.player1.socket.on('leaveGame', (data) => {
+            console.log("Palyer 1 dsconected")
             if(data){
                 this.disconnectionhandler(true);
             }
@@ -482,8 +483,9 @@ module.exports = class NLineRoom{
         });
 
         this.player2.socket.on('leaveGame', (data) => {
+            console.log("Palyer 2 dsconected")
             if(data){
-                this.disconnectionhandler(true);
+                this.disconnectionhandler(false);
             }
         });
 
@@ -533,10 +535,10 @@ module.exports = class NLineRoom{
                 if (data === 'FINISH') {
                     d.unsubscribe();
                     if(jugador === true){
-                        this.player1.socket.disconnect(true);
+                        this.player1.socket.offAny();
                         pararTiempo = false;
                     }else if(jugador === false){
-                        this.player2.socket.disconnect(true);
+                        this.player2.socket.offAny();
                         pararTiempo = false;
                     }
                 }
