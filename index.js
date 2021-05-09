@@ -59,6 +59,7 @@ io./*use(/*Middlewares.verifyTokenSocket()).*/on("connection", (client) => {
     Controller.BoardController.joinRoom(io, client);
     Controller.BoardController.playWithUser(io, client);
     Controller.BoardController.exitRoom(io, client);
+    Controller.BoardController.viewGame(io, client);
 });
 
 server.listen(process.env.PORT, function () {
