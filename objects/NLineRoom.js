@@ -42,12 +42,7 @@ module.exports = class NLineRoom{
                 player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
             })
 
-            this.player1.info.isPlaying = false;
-            this.palyer1.socket.emit("userStateChange",this.player1.info);
             this.player1.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
-            
-            this.player2.info.isPlaying = false;
-            this.palyer2.socket.emit("userStateChange",this.player2.info);
             this.player2.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
 
             if(this.roomId){
@@ -58,12 +53,12 @@ module.exports = class NLineRoom{
             // se envia la informacion de perdidad al jugador desconectado
 
             // se cierra la conexion
-            this.player1.socket.offAny();
-            this.player2.socket.offAny();       
+            this.killListeners(this.player1.socket);
+            this.killListeners(this.player2.socket);   
         }else if(this.botInfo){  
             this.finishGame(1, this.botInfo.id);
             // se cierra la conexion
-            this.player1.socket.offAny();
+            this.killListeners(this.player1.socket);
         }
     }
 
@@ -84,37 +79,35 @@ module.exports = class NLineRoom{
             }
             // se envia la informacion al jugador
             if(!this.botInfo.bot || data.id == -1){
+                console.log(data)
                 sendTo.emit('responseBoard', data);
-                this.viwers.forEach(element => element.emit('responseBoard',data))
+                this.viewers.forEach(element => element.emit('responseBoard',data))
             }
         }
     }
 
     finishGame(win,playerWinner){
         this.active = false;
+        this.killListeners(this.player1.socket);
+        this.killListeners(this.player2.socket);
         this.deleter(this);
         if(this.botInfo.bot){
             this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+            
             this.player1.socket.offAny();
             return;
         }
-        this.player1.info.isPlaying = false;
-        this.palyer1.socket.emit("userStateChange",this.player1.info);
-        this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        
-        this.player2.info.isPlaying = false;
-        this.palyer2.socket.emit("userStateChange",this.player2.info);
-        this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        this.player1.socket.offAny();
-        this.player2.socket.offAny();
 
+        this.viewers.forEach(element => element.emit('finishGameRoom',{ win:win, board:this.board, playerWinner: playerWinner }));
+        this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+        this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         
         if(this.roomId){
             const boardController = require('../controllers/boardController');
             boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,false,null);
             boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,false,null);
         }
-
+        
         // se guarda en al base de datos
         const controller = require('../controllers').PlayerController;
         controller.addGame({
@@ -125,11 +118,21 @@ module.exports = class NLineRoom{
         
     }
 
+    killListeners(socket){
+        console.log("matando Listeners")
+        socket.removeAllListeners('disconnect');
+        socket.removeAllListeners('gameRoomInfo');
+        socket.removeAllListeners('pauseGame');
+        socket.removeAllListeners('leaveGame');
+        socket.removeAllListeners('boardMove');
+        socket.removeAllListeners('finishGameRoom');
+    }
+
     addViewer(socket){
         this.viewers.push(socket);
         socket.emit('matchInfo',{
             player1:this.player1.info,
-            palyer2:this.player2.info,
+            player2:this.player2.info,
             board:this.board
         });
     }
@@ -480,7 +483,7 @@ module.exports = class NLineRoom{
     }
 
     startHuman(){
-        if(this.idRoom){
+        if(this.roomId){
             const boardController = require('../controllers/boardController');
             boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,true,this.code);
             boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,true,this.code);
@@ -510,7 +513,7 @@ module.exports = class NLineRoom{
         });
 
         this.player1.socket.on('leaveGame', (data) => {
-            console.log("Palyer 1 dsconected")
+         
             if(data){
                 this.disconnectionhandler(true);
             }
@@ -527,7 +530,7 @@ module.exports = class NLineRoom{
         });
 
         this.player2.socket.on('leaveGame', (data) => {
-            console.log("Palyer 2 dsconected")
+          
             if(data){
                 this.disconnectionhandler(false);
             }
@@ -536,6 +539,7 @@ module.exports = class NLineRoom{
         //this.cronometro(this.player1Playing, 15);
 
         this.player1.socket.on('boardMove', (data) => {
+         
             if(this.player1Playing){
                 pararTiempo = true;
                 this.moveHandler(data,this.player2.socket);
@@ -545,6 +549,7 @@ module.exports = class NLineRoom{
         });
 
         this.player2.socket.on('boardMove', (data) =>{
+          
             if(!this.player1Playing){
                 pararTiempo = true;
                 this.moveHandler(data,this.player1.socket);
