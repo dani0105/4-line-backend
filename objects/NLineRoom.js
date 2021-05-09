@@ -42,14 +42,16 @@ module.exports = class NLineRoom{
                 player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
             })
 
-            this.player1.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
-            this.player2.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
-
             if(this.roomId){
                 const boardController = require('../controllers/boardController');
                 boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,false,null);
                 boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,false,null);
             }
+            
+            this.player1.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
+            this.player2.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
+
+            
             // se envia la informacion de perdidad al jugador desconectado
 
             // se cierra la conexion
@@ -94,15 +96,18 @@ module.exports = class NLineRoom{
             return;
         }
         this.killListeners(this.player2.socket);
-        this.viewers.forEach(element => element.emit('finishGameRoom',{ win:win, board:this.board, playerWinner: playerWinner }));
-        this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-        
+
         if(this.roomId){
             const boardController = require('../controllers/boardController');
             boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,false,null);
             boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,false,null);
         }
+
+        this.viewers.forEach(element => element.emit('finishGameRoom',{ win:win, board:this.board, playerWinner: playerWinner }));
+        this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+        this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+        
+        
         
         // se guarda en al base de datos
         const controller = require('../controllers').PlayerController;
