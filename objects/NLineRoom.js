@@ -1,11 +1,13 @@
 const { REQUEST_HEADER_FIELDS_TOO_LARGE } = require('http-status-codes');
+
 var pararTiempo = false;
 var timer = 15;
 module.exports = class NLineRoom{
 
-    constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels, roomId){
+    constructor(size, winSize, playerInfo, socketPlayer1, code, privateRoom, deleter, bots, nivels, roomId,socket){
         this.board = this.createBoard(size);
         this.code = code;
+        this.socket = socket;
         this.winSize = winSize;
         this.player1 = {
             info: playerInfo,
@@ -19,6 +21,7 @@ module.exports = class NLineRoom{
         this.player1Playing = true;
         this.privateRoom = privateRoom;
         this.active = true;
+        this.viewers = [];
         this.deleter = deleter;
         this.botInfo = {
             bot: bots,
@@ -38,8 +41,20 @@ module.exports = class NLineRoom{
                 player2:this.player2.info.id,
                 player_winner:isPlayer1?this.player2.info.id:this.player1.info.id
             })
+
+            this.player1.info.isPlaying = false;
+            this.palyer1.socket.emit("userStateChange",this.player1.info);
             this.player1.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
+            
+            this.player2.info.isPlaying = false;
+            this.palyer2.socket.emit("userStateChange",this.player2.info);
             this.player2.socket.emit("finishGameRoom",{win:0, playerWinner:isPlayer1? this.player2.info.id: this.player1.info.id }); // 0 : desconectado
+
+            if(this.roomId){
+                const boardController = require('../controllers/boardController');
+                boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,false,null);
+                boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,false,null);
+            }
             // se envia la informacion de perdidad al jugador desconectado
 
             // se cierra la conexion
@@ -69,7 +84,8 @@ module.exports = class NLineRoom{
             }
             // se envia la informacion al jugador
             if(!this.botInfo.bot || data.id == -1){
-                sendTo.emit('responseBoard', data)
+                sendTo.emit('responseBoard', data);
+                this.viwers.forEach(element => element.emit('responseBoard',data))
             }
         }
     }
@@ -82,10 +98,23 @@ module.exports = class NLineRoom{
             this.player1.socket.offAny();
             return;
         }
+        this.player1.info.isPlaying = false;
+        this.palyer1.socket.emit("userStateChange",this.player1.info);
         this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
+        
+        this.player2.info.isPlaying = false;
+        this.palyer2.socket.emit("userStateChange",this.player2.info);
         this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.player1.socket.offAny();
         this.player2.socket.offAny();
+
+        
+        if(this.roomId){
+            const boardController = require('../controllers/boardController');
+            boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,false,null);
+            boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,false,null);
+        }
+
         // se guarda en al base de datos
         const controller = require('../controllers').PlayerController;
         controller.addGame({
@@ -94,6 +123,15 @@ module.exports = class NLineRoom{
             player_winner: playerWinner
         })
         
+    }
+
+    addViewer(socket){
+        this.viewers.push(socket);
+        socket.emit('matchInfo',{
+            player1:this.player1.info,
+            palyer2:this.player2.info,
+            board:this.board
+        });
     }
 
     /**
@@ -442,6 +480,12 @@ module.exports = class NLineRoom{
     }
 
     startHuman(){
+        if(this.idRoom){
+            const boardController = require('../controllers/boardController');
+            boardController.updateUserState(this.socket,this.roomId,this.player1.info.id,true,this.code);
+            boardController.updateUserState(this.socket,this.roomId,this.player2.info.id,true,this.code);
+        }
+
         this.player1.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:this.player1Playing, player: this.player2.info});
         this.player2.socket.emit('gameRoomInfo',{ board: this.board, isPlaying:!this.player1Playing, player: this.player1.info});
 
