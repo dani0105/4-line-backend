@@ -12,7 +12,7 @@ exports.createGameRoom = (socket,client) => {
     client.on("createGameRoom", (data)=>{
         cont++;
         var code = Math.random().toString(36).substring(7).concat(cont);
-        var gameRoom = new NLineRoom(data.boardSize, 4, data.playerInfo, client, code, true, deleteGameRoom, data.bot, data.nivel,data.roomId);
+        var gameRoom = new NLineRoom(data.boardSize, 4, data.playerInfo, client, code, true, deleteGameRoom, data.bot, data.nivel,data.roomId,socket);
         gameRooms.push(gameRoom);
         client.emit('createdGameRoom', code);
         if(data.bot){
@@ -59,7 +59,6 @@ exports.connectGameRoom = (socket,client) => {
  */
 exports.searchGame = (socket,client) => {
     client.on("searchGame", (data)=>{
-
         for( var i = 0; i < gameRooms.length; i++){
             var room = gameRooms[i];
             if(data.roomId){
@@ -87,7 +86,8 @@ exports.searchGame = (socket,client) => {
         }
 
         cont++;
-        var gameRoom = new NLineRoom(data.boardSize,4, data.playerInfo, client,'',false,deleteGameRoom,false,0,data.roomId);
+        var code = Math.random().toString(36).substring(7).concat(cont);
+        var gameRoom = new NLineRoom(data.boardSize,4, data.playerInfo, client,code,false,deleteGameRoom,false,0,data.roomId,socket);
         gameRooms.push(gameRoom);
         client.emit('searchedGame', {searching:true});
     });
@@ -100,7 +100,6 @@ exports.joinRoom = (socket,client) => {
         console.log("El usuario",data.user.username," con id ",data.user.id)
         var room = null;
         data.user.socket = client;
-        data.user.isPlaying = true;
         for(let i = 0; i < rooms.length; i++){
             if(rooms[i].idRoom == data.idRoom){
                 var exist = false;
@@ -118,7 +117,7 @@ exports.joinRoom = (socket,client) => {
             }
         }
         if(!room){
-            room = {idRoom:data.idRoom,user:[{id:3,username:'Test User',picture:'',isPlaying:true},data.user]};
+            room = {idRoom:data.idRoom,user:[{id:3,username:'Test User',picture:'',isPlaying:true,code:'as'},data.user]};
             rooms.push(room);
         }
 
@@ -132,7 +131,8 @@ exports.joinRoom = (socket,client) => {
                 id:user.id,
                 username:user.username,
                 picture:user.picture,
-                isPlaying:data.user.isPlaying
+                code:user.code,
+                isPlaying:user.isPlaying
             })
         }
         client.emit('roomInfo',users);
@@ -142,11 +142,12 @@ exports.joinRoom = (socket,client) => {
             username: data.user.username,
             id: data.user.id,
             picture: data.user.picture,
+            code:data.user.code,
             isPlaying:data.user.isPlaying
         });
 
         client.on('disconnect',() => {
-            console.log("usuario desconectado")
+            console.log("User Disconected")
             client.leave(data.idRoom);
             socket.in(data.idRoom).emit('userDisconnected',{
                 id:data.user.id,
@@ -156,6 +157,104 @@ exports.joinRoom = (socket,client) => {
         });
     });
 }
+
+exports.viewGame = (socket,client) => {
+    client.on("viewGame", (data) => {
+        for(let i = 0; i < gameRooms.length; i++){
+            if(gameRooms[i].code == data.code && gameRooms[i].roomId == data.roomId){
+                gameRooms[i].addViewer(client);
+                return;
+            }
+        }
+    });
+}
+
+
+exports.exitRoom = (socket,client) => {
+    client.on("exitRoom", (data) => {
+        for(let i = 0;i<rooms.length; i++){
+            if(rooms[i].idRoom == data.idRoom){
+                const room = rooms[i];
+                for(let x = 0; x < room.user.length; x++){
+                    if(room.user[x].id == data.id){
+                        room.user.splice(x,i);
+                        client.leave(data.idRoom);
+                        socket.in(data.idRoom).emit('userDisconnected',{
+                            id:data.id
+                        });
+                        return;
+                    }
+                }
+            }
+        }
+    });
+}
+
+exports.playWithUser = (socket,client) => {
+    client.on("playWithUser", (data)=>{
+        for(let i = 0 ; i < rooms.length; i++){
+            if(rooms[i].idRoom == data.idRoom){
+                
+                const room = rooms[i];
+
+                for(let x = 0; x < room.user.length; x++){
+                    if(room.user[x].id == data.player2.id){
+                        //room.user[x].socket.emit('gameNotification',data.player2);
+                        socket.emit('gameNotification',data.player2);
+                        client.on('notificationResponse',(response) => {
+                            if(response){
+                                cont++;
+                                var code = Math.random().toString(36).substring(7).concat(cont);
+                            
+                                const player1 = {
+                                    info:{
+                                        id:data.player1.username,
+                                        picture:data.player1.picture,
+                                        username:data.player1.username
+                                    }
+                                }
+
+                                var gameRoom = new NLineRoom(6, 4, player1, client, code, true, deleteGameRoom, false, 0,data.idRoom,socket);
+                                gameRoom.player2 = {
+                                    info:data.player2,
+                                    socket:client
+                                };
+                                gameRooms.push(gameRoom);
+                                gameRoom.start();
+                                
+                            }
+                            client.emit('gameNotificationAnswer',response);
+                        })
+                    }
+                }
+            }
+        }
+    });
+}
+
+exports.updateUserState = (socket,idRoom,idUser,state, code) => {
+    for(let i = 0; i < rooms.length; i++){
+        if(rooms[i].idRoom == idRoom){
+            const room = rooms[i];
+            for(let x = 0; x < room.user.length; x++){
+                if(room.user[x].id == idUser){
+                    room.user[x].isPlaying = state;
+
+                    socket.in(idRoom).emit('userStateChange',{
+                        id:room.user[x].id,
+                        username:room.user[x].username,
+                        picture:room.user[x].picture,
+                        isPlaying:room.user[x].isPlaying,
+                        code:code
+                    });
+                    break;
+                }
+            }
+            break;
+        }
+    }
+}
+
 
 
 module.exports
