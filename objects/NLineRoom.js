@@ -58,7 +58,6 @@ module.exports = class NLineRoom{
         }else if(this.botInfo){  
             this.finishGame(1, this.botInfo.id);
             // se cierra la conexion
-            this.killListeners(this.player1.socket);
         }
     }
 
@@ -89,15 +88,12 @@ module.exports = class NLineRoom{
     finishGame(win,playerWinner){
         this.active = false;
         this.killListeners(this.player1.socket);
-        this.killListeners(this.player2.socket);
         this.deleter(this);
         if(this.botInfo.bot){
             this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
-            
-            this.player1.socket.offAny();
             return;
         }
-
+        this.killListeners(this.player2.socket);
         this.viewers.forEach(element => element.emit('finishGameRoom',{ win:win, board:this.board, playerWinner: playerWinner }));
         this.player1.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
         this.player2.socket.emit("finishGameRoom",{ win:win, board:this.board, playerWinner: playerWinner });
