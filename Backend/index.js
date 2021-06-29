@@ -52,7 +52,7 @@ app.use('/auth', Route.AuthRoute);
 app.use('/player', /*Middlewares.verifyTokenHTTP(),*/ Route.PlayerRoute);
 app.use('/room', /*Middlewares.verifyTokenHTTP(),*/ Route.RoomRouter);
 
-io/*.use(Middlewares.verifyTokenSocket())*/.on("connection", (client) => {
+io./*use(/*Middlewares.verifyTokenSocket()).*/on("connection", (client) => {
     Controller.BoardController.createGameRoom(io, client);
     Controller.BoardController.connectGameRoom(io, client);
     Controller.BoardController.searchGame(io, client);

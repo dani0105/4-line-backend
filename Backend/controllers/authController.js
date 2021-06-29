@@ -4,10 +4,11 @@ const jwt = require('jsonwebtoken');
 const StatusCodes = require('http-status-codes').StatusCodes;
 
 const credentials = {
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    database:process.env.DB_DATABASE,
+    port:process.env.DB_PORT,
+    password: process.env.DB_PASSWORD
 }
 
 exports.login = async (req) => {
@@ -140,7 +141,7 @@ generateToken = (id,email,username) => {
         email:email
     },process.env.SERVER_SCRET,
     {
-        expiresIn: process.env.TOKEN_LIFE,
+        expiresIn: '1h',
         subject:email
     });
 }

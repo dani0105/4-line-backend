@@ -9,8 +9,7 @@ router.post('/game', (req, res, next) => {
             res.status(StatusCodes.OK).json(result);
         else
             res.status(StatusCodes.BAD_REQUEST).json({ success: false});
-    }).catch(err => {console.log(err)
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false })} )
+    }).catch(err => res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) )
 });
 
 router.get('/game', (req, res, next) => {
@@ -19,10 +18,7 @@ router.get('/game', (req, res, next) => {
             res.status(StatusCodes.OK).json(result);
         else
             res.status(StatusCodes.BAD_REQUEST).json({ success: false});
-    }).catch(err => {
-        console.log(err)
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) 
-    })
+    }).catch(err => res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ success: false }) )
 });
 
 module.exports = router;

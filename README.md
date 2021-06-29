@@ -1,18 +1,16 @@
-# Backend del juego 4 en Linea
+# Conecta 4!
 
-Este es el backend de un juego 4 en línea. 
-Se encarga de registrar y loguear usuarios en el sistema, además de la creación,
-ejecución y finalización de partidas.
+Este es el repositorio del juego conecta 4 echo en react y nodejs.
 
 ## Instalación
 
 Clonar este repositorio con:
 
 ```bash
- git clone https://github.com/dani0105/DS-backend.git
+ git clone https://github.com/dani0105/4-line-backend.git
 ```
 
-Una vez clonado el repositorio se necesita instalar sus dependencias con:
+Una vez clonado el repositorio se necesita instalar las dependencias de backend y frontend por lo cual es necesario entrar en cada carpeta y ejecutar el siguiente comando:
 
 ```bash
  npm install
@@ -20,9 +18,8 @@ Una vez clonado el repositorio se necesita instalar sus dependencias con:
 
 ## Ejecución
 
-Para correr el servidor es necesario iniciarlo con
+Ejecutar el backend y el frontend con el comando:
 
 ```bash
- npm start 
+ npm start
 ```
-Una vez iniciado el servidor empezara a escuchar en https://www.localhost:8081/
